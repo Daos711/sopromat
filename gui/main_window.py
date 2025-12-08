@@ -20,7 +20,7 @@ class MainWindow(QMainWindow):
     def __init__(self):
         super().__init__()
         self.setWindowTitle("Сопромат - Построение эпюр")
-        self.setMinimumSize(1000, 800)
+        self.setMinimumSize(950, 700)
 
         self._setup_ui()
 
@@ -117,7 +117,7 @@ class MainWindow(QMainWindow):
         self.results_text = QTextEdit()
         self.results_text.setReadOnly(True)
         self.results_text.setFont(QFont("Courier New", 10))
-        self.results_text.setMinimumHeight(300)
+        self.results_text.setMinimumHeight(250)
         self.results_text.setStyleSheet("""
             QTextEdit {
                 background-color: #f5f5f5;
@@ -155,9 +155,9 @@ class MainWindow(QMainWindow):
         scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarAsNeeded)
         scroll.setVerticalScrollBarPolicy(Qt.ScrollBarAsNeeded)
 
-        self.plot_canvas = PlotCanvas(width=10, height=12, dpi=100)
+        self.plot_canvas = PlotCanvas(width=10, height=10, dpi=100)
         self.plot_canvas.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
-        self.plot_canvas.setMinimumSize(700, 800)
+        self.plot_canvas.setMinimumSize(650, 650)
 
         scroll.setWidget(self.plot_canvas)
         return scroll
