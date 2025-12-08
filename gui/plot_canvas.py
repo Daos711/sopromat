@@ -34,7 +34,7 @@ class PlotCanvas(FigureCanvas):
         r = solver.results
 
         # 3 подграфика: схема, Q(x), M(x) - без info панели
-        gs = self.fig.add_gridspec(3, 1, height_ratios=[1.2, 1, 1], hspace=0.15)
+        gs = self.fig.add_gridspec(3, 1, height_ratios=[1.5, 1, 1], hspace=0.25)
 
         ax_scheme = self.fig.add_subplot(gs[0])
         ax_Q = self.fig.add_subplot(gs[1])
@@ -121,16 +121,18 @@ class PlotCanvas(FigureCanvas):
                     arrowprops=dict(arrowstyle='->', color='red', lw=2.5))
         ax.text(a + L*0.02, F_y_top, f'F = {p.F} кН', fontsize=9, ha='left', va='center', color='red')
 
-        # Реакции ОТ ОПОРЫ ВВЕРХ (стрелка начинается на опоре, идёт вверх)
-        react_len = 0.2
-        # RA - от опоры A вверх
-        ax.annotate('', xy=(0, -beam_height/2 + react_len), xytext=(0, -beam_height/2),
-                    arrowprops=dict(arrowstyle='->', color='green', lw=2))
-        ax.text(-L*0.02, -beam_height/2 + react_len/2, f'$R_A$={r.RA:.1f}', fontsize=8, color='green', ha='right', va='center')
-        # RB - от опоры B вверх
-        ax.annotate('', xy=(L, -beam_height/2 + react_len), xytext=(L, -beam_height/2),
-                    arrowprops=dict(arrowstyle='->', color='green', lw=2))
-        ax.text(L + L*0.02, -beam_height/2 + react_len/2, f'$R_B$={r.RB:.1f}', fontsize=8, color='green', ha='left', va='center')
+        # Реакции ОТ ВЕРХНЕЙ ЧАСТИ БАЛКИ ВВЕРХ (стрелка начинается на балке, идёт вверх)
+        # Вектор должен быть выше линии q (выше q_y_top)
+        react_start = beam_height/2  # От верхней части балки
+        react_len = 0.35  # Длинный вектор выше линии q
+        # RA - от верхней части балки A вверх
+        ax.annotate('', xy=(0, react_start + react_len), xytext=(0, react_start),
+                    arrowprops=dict(arrowstyle='->', color='green', lw=2.5))
+        ax.text(-L*0.03, react_start + react_len, f'$R_A$={r.RA:.1f}', fontsize=9, color='green', ha='right', va='bottom')
+        # RB - от верхней части балки B вверх
+        ax.annotate('', xy=(L, react_start + react_len), xytext=(L, react_start),
+                    arrowprops=dict(arrowstyle='->', color='green', lw=2.5))
+        ax.text(L + L*0.03, react_start + react_len, f'$R_B$={r.RB:.1f}', fontsize=9, color='green', ha='left', va='bottom')
 
         # Размеры
         y_dim_a = ground_y - 0.12
@@ -147,8 +149,8 @@ class PlotCanvas(FigureCanvas):
         # Пунктир от силы F вниз (граница участков) - будет продолжен на эпюрах
         ax.axvline(x=a, color='gray', linestyle='--', alpha=0.7, linewidth=1)
 
-        ax.set_xlim(xlim)
-        ax.set_ylim(-0.55, 0.55)
+        ax.set_xlim(-L*0.08, L*1.12)  # Немного расширим, чтобы влезло всё
+        ax.set_ylim(-0.65, 0.75)  # Расширим, чтобы опоры были полностью видны
         ax.axis('off')
         ax.set_title(f'Задача 2. Вариант {p.N}', fontsize=13, fontweight='bold', pad=3)
 
@@ -210,18 +212,26 @@ class PlotCanvas(FigureCanvas):
             if abs(Q) > 0.1:
                 ax.plot([x, x], [0, Q], 'b-', alpha=0.3, linewidth=0.5)
 
-        # Знаки в центре областей
-        avg_Q1 = (Q_at_0 + Q_at_a_left) / 2
-        if abs(avg_Q1) > 0.5:
-            sign1 = '+' if avg_Q1 > 0 else '−'
-            ax.text(p.a / 2, avg_Q1 / 2, sign1, fontsize=14, ha='center', va='center',
-                    fontweight='bold', color='blue', alpha=0.7)
+        # Знаки в ЦЕНТРЕ каждой области (всегда показываем)
+        # Область 1: от 0 до a
+        center_x1 = p.a / 2
+        center_y1 = (Q_at_0 + Q_at_a_left) / 4  # Центр по высоте
+        if Q_at_0 > 0 or Q_at_a_left > 0:
+            ax.text(center_x1, center_y1, '+', fontsize=16, ha='center', va='center',
+                    fontweight='bold', color='blue', alpha=0.8)
+        elif Q_at_0 < 0 or Q_at_a_left < 0:
+            ax.text(center_x1, center_y1, '−', fontsize=16, ha='center', va='center',
+                    fontweight='bold', color='blue', alpha=0.8)
 
-        avg_Q2 = (Q_at_a_right + Q_at_L) / 2
-        if abs(avg_Q2) > 0.5:
-            sign2 = '+' if avg_Q2 > 0 else '−'
-            ax.text((p.a + p.L) / 2, avg_Q2 / 2, sign2, fontsize=14, ha='center', va='center',
-                    fontweight='bold', color='blue', alpha=0.7)
+        # Область 2: от a до L
+        center_x2 = (p.a + p.L) / 2
+        center_y2 = (Q_at_a_right + Q_at_L) / 4  # Центр по высоте
+        if Q_at_a_right > 0 or Q_at_L > 0:
+            ax.text(center_x2, center_y2, '+', fontsize=16, ha='center', va='center',
+                    fontweight='bold', color='blue', alpha=0.8)
+        elif Q_at_a_right < 0 or Q_at_L < 0:
+            ax.text(center_x2, center_y2, '−', fontsize=16, ha='center', va='center',
+                    fontweight='bold', color='blue', alpha=0.8)
 
         # Пунктир границы участков
         ax.axvline(x=p.a, color='gray', linestyle='--', alpha=0.7, linewidth=1)
@@ -298,8 +308,8 @@ class PlotCanvas(FigureCanvas):
         p = solver.params
         r = solver.results
 
-        # 4 подграфика без info панели
-        gs = self.fig.add_gridspec(4, 1, height_ratios=[1.0, 0.8, 0.8, 0.8], hspace=0.15)
+        # 4 подграфика без info панели - увеличенное расстояние чтобы не накладывались надписи
+        gs = self.fig.add_gridspec(4, 1, height_ratios=[1.2, 0.8, 0.8, 0.8], hspace=0.35)
 
         ax_scheme = self.fig.add_subplot(gs[0])
         ax_N = self.fig.add_subplot(gs[1])
@@ -350,44 +360,47 @@ class PlotCanvas(FigureCanvas):
         ax.text(L1 + L2/2, h2/2 + 0.05, f'$A_2$={p.A2}', fontsize=8, ha='center', va='bottom')
         ax.text(L1 + L2 + L3/2, h3/2 + 0.05, f'$A_3$={p.A3}', fontsize=8, ha='center', va='bottom')
 
-        # Заделка - слева от 0
-        wall_width = L * 0.03
-        wall_height = max_h + 0.15
+        # Заделка - слева от 0, более заметная
+        wall_width = L * 0.05
+        wall_height = max_h + 0.2
         ax.add_patch(Rectangle((-wall_width, -wall_height/2), wall_width, wall_height,
-                                facecolor='gray', edgecolor='black'))
-        for i in range(7):
-            y_start = -wall_height/2 + i * wall_height / 6
-            ax.plot([-wall_width, -wall_width - L*0.02], [y_start, y_start - 0.03], 'k-', linewidth=1)
-        ax.text(0, -wall_height/2 - 0.08, 'A', fontsize=9, ha='center', fontweight='bold')
+                                facecolor='darkgray', edgecolor='black', linewidth=2))
+        # Штриховка заделки
+        for i in range(8):
+            y_start = -wall_height/2 + i * wall_height / 7
+            ax.plot([-wall_width, -wall_width - L*0.025], [y_start, y_start - 0.04], 'k-', linewidth=1.5)
+        ax.text(-wall_width/2, -wall_height/2 - 0.1, 'A', fontsize=10, ha='center', fontweight='bold')
 
         # Ось x справа
         ax.annotate('', xy=(L * 1.06, 0), xytext=(L, 0),
                     arrowprops=dict(arrowstyle='->', color='black', lw=1.2))
         ax.text(L * 1.07, 0, 'x', fontsize=10, va='center')
 
-        # Силы - пропорционально длине
-        arrow_len = L * 0.05
-        # F1 вправо на границе L1
-        ax.annotate('', xy=(L1 + arrow_len, 0), xytext=(L1 - arrow_len*0.3, 0),
-                    arrowprops=dict(arrowstyle='->', color='blue', lw=2))
-        ax.text(L1, max_h/2 + 0.15, f'$F_1$={p.F1}', fontsize=8, ha='center', color='blue')
+        # Силы - начинаются РОВНО на границах участков
+        arrow_len = L * 0.08
 
-        # F2 влево на границе L1+L2
-        ax.annotate('', xy=(L1 + L2 - arrow_len, 0), xytext=(L1 + L2 + arrow_len*0.3, 0),
-                    arrowprops=dict(arrowstyle='->', color='red', lw=2))
-        ax.text(L1 + L2, max_h/2 + 0.15, f'$F_2$={p.F2}', fontsize=8, ha='center', color='red')
+        # F1 вправо - начинается РОВНО на границе L1
+        ax.annotate('', xy=(L1 + arrow_len, 0), xytext=(L1, 0),
+                    arrowprops=dict(arrowstyle='->', color='blue', lw=2.5))
+        ax.text(L1 + arrow_len/2, max_h/2 + 0.12, f'$F_1$={p.F1}', fontsize=9, ha='center', color='blue')
 
-        # F3 вправо на конце L
-        ax.annotate('', xy=(L + arrow_len, 0), xytext=(L, 0),
-                    arrowprops=dict(arrowstyle='->', color='blue', lw=2))
-        ax.text(L + arrow_len*0.5, max_h/2 + 0.15, f'$F_3$={p.F3}', fontsize=8, ha='left', color='blue')
+        # F2 влево - начинается РОВНО на границе L1+L2
+        ax.annotate('', xy=(L1 + L2 - arrow_len, 0), xytext=(L1 + L2, 0),
+                    arrowprops=dict(arrowstyle='->', color='red', lw=2.5))
+        ax.text(L1 + L2 - arrow_len/2, max_h/2 + 0.12, f'$F_2$={p.F2}', fontsize=9, ha='center', color='red')
 
-        # Реакция RA - ОТ ЛЕВОГО КРАЯ ЗАДЕЛКИ ВЛЕВО, длинная стрелка
-        ra_arrow_len = L * 0.12
-        # Стрелка идёт ВЛЕВО от заделки
-        ax.annotate('', xy=(-wall_width - ra_arrow_len, 0), xytext=(-wall_width, 0),
-                    arrowprops=dict(arrowstyle='->', color='green', lw=2.5))
-        ax.text(-wall_width - ra_arrow_len/2, 0.12, f'$R_A$={r.RA:.1f}', fontsize=8, ha='center', color='green')
+        # F3 вправо - начинается РОВНО на конце L, хорошо видна
+        ax.annotate('', xy=(L + arrow_len*1.5, 0), xytext=(L, 0),
+                    arrowprops=dict(arrowstyle='->', color='blue', lw=2.5))
+        ax.text(L + arrow_len, max_h/2 + 0.12, f'$F_3$={p.F3}', fontsize=9, ha='center', color='blue')
+
+        # Реакция RA - ОТ ЦЕНТРА ЗАДЕЛКИ ВЛЕВО, длинная стрелка
+        ra_arrow_len = L * 0.15
+        # Стрелка начинается в ЦЕНТРЕ заделки и идёт ВЛЕВО
+        ra_start_x = -wall_width / 2  # Центр заделки
+        ax.annotate('', xy=(ra_start_x - ra_arrow_len, 0), xytext=(ra_start_x, 0),
+                    arrowprops=dict(arrowstyle='->', color='green', lw=3))
+        ax.text(ra_start_x - ra_arrow_len/2, 0.15, f'$R_A$={r.RA:.1f}', fontsize=10, ha='center', color='green', fontweight='bold')
 
         # Размер L
         y_dim = -max_h/2 - 0.15
@@ -405,8 +418,9 @@ class PlotCanvas(FigureCanvas):
         ax.axvline(x=L1, color='gray', linestyle='--', alpha=0.7, linewidth=1)
         ax.axvline(x=L1 + L2, color='gray', linestyle='--', alpha=0.7, linewidth=1)
 
-        ax.set_xlim(xlim)
-        ax.set_ylim(-max_h/2 - 0.3, max_h/2 + 0.45)
+        # Расширяем xlim схемы, чтобы влезли заделка, реакция и F3
+        ax.set_xlim(-L*0.25, L*1.2)
+        ax.set_ylim(-max_h/2 - 0.35, max_h/2 + 0.5)
         # НЕ используем set_aspect - схема растягивается по ширине как эпюры
         ax.axis('off')
         ax.set_title(f'Задача 3. Вариант {p.N}', fontsize=12, fontweight='bold', pad=3)

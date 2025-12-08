@@ -20,7 +20,7 @@ class MainWindow(QMainWindow):
     def __init__(self):
         super().__init__()
         self.setWindowTitle("Сопромат - Построение эпюр")
-        self.setMinimumSize(950, 700)
+        self.setMinimumSize(1100, 800)  # Увеличенное окно чтобы всё влезало
 
         self._setup_ui()
 
@@ -155,9 +155,9 @@ class MainWindow(QMainWindow):
         scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarAsNeeded)
         scroll.setVerticalScrollBarPolicy(Qt.ScrollBarAsNeeded)
 
-        self.plot_canvas = PlotCanvas(width=10, height=10, dpi=100)
+        self.plot_canvas = PlotCanvas(width=11, height=12, dpi=100)
         self.plot_canvas.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
-        self.plot_canvas.setMinimumSize(650, 650)
+        self.plot_canvas.setMinimumSize(750, 750)
 
         scroll.setWidget(self.plot_canvas)
         return scroll
