@@ -125,14 +125,14 @@ class PlotCanvas(FigureCanvas):
         # Вектор должен быть выше линии q (выше q_y_top)
         react_start = beam_height/2  # От верхней части балки
         react_len = 0.35  # Длинный вектор выше линии q
-        # RA - от верхней части балки A вверх
+        # RA - от верхней части балки A вверх, ровно над x=0
         ax.annotate('', xy=(0, react_start + react_len), xytext=(0, react_start),
                     arrowprops=dict(arrowstyle='->', color='green', lw=2.5))
-        ax.text(-L*0.03, react_start + react_len, f'$R_A$={r.RA:.1f}', fontsize=9, color='green', ha='right', va='bottom')
-        # RB - от верхней части балки B вверх
+        ax.text(0, react_start + react_len + 0.03, f'$R_A$={r.RA:.1f}', fontsize=9, color='green', ha='center', va='bottom')
+        # RB - от верхней части балки B вверх, ровно над x=L
         ax.annotate('', xy=(L, react_start + react_len), xytext=(L, react_start),
                     arrowprops=dict(arrowstyle='->', color='green', lw=2.5))
-        ax.text(L + L*0.03, react_start + react_len, f'$R_B$={r.RB:.1f}', fontsize=9, color='green', ha='left', va='bottom')
+        ax.text(L, react_start + react_len + 0.03, f'$R_B$={r.RB:.1f}', fontsize=9, color='green', ha='center', va='bottom')
 
         # Размеры
         y_dim_a = ground_y - 0.12
@@ -149,7 +149,8 @@ class PlotCanvas(FigureCanvas):
         # Пунктир от силы F вниз (граница участков) - будет продолжен на эпюрах
         ax.axvline(x=a, color='gray', linestyle='--', alpha=0.7, linewidth=1)
 
-        ax.set_xlim(-L*0.08, L*1.12)  # Немного расширим, чтобы влезло всё
+        # xlim ТАКОЙ ЖЕ как у эпюр для единых пунктирных линий
+        ax.set_xlim(xlim)
         ax.set_ylim(-0.65, 0.75)  # Расширим, чтобы опоры были полностью видны
         ax.axis('off')
         ax.set_title(f'Задача 2. Вариант {p.N}', fontsize=13, fontweight='bold', pad=3)
@@ -360,16 +361,16 @@ class PlotCanvas(FigureCanvas):
         ax.text(L1 + L2/2, h2/2 + 0.05, f'$A_2$={p.A2}', fontsize=8, ha='center', va='bottom')
         ax.text(L1 + L2 + L3/2, h3/2 + 0.05, f'$A_3$={p.A3}', fontsize=8, ha='center', va='bottom')
 
-        # Заделка - слева от 0, более заметная
-        wall_width = L * 0.05
-        wall_height = max_h + 0.2
-        ax.add_patch(Rectangle((-wall_width, -wall_height/2), wall_width, wall_height,
-                                facecolor='darkgray', edgecolor='black', linewidth=2))
-        # Штриховка заделки
-        for i in range(8):
-            y_start = -wall_height/2 + i * wall_height / 7
-            ax.plot([-wall_width, -wall_width - L*0.025], [y_start, y_start - 0.04], 'k-', linewidth=1.5)
-        ax.text(-wall_width/2, -wall_height/2 - 0.1, 'A', fontsize=10, ha='center', fontweight='bold')
+        # Заделка - вертикальная линия на x=0 со штриховкой (без прямоугольника)
+        wall_height = max_h + 0.15
+        # Вертикальная линия заделки на x=0
+        ax.plot([0, 0], [-wall_height/2, wall_height/2], 'k-', linewidth=3)
+        # Штриховка заделки - от линии влево
+        hatch_len = L * 0.03
+        for i in range(10):
+            y_pos = -wall_height/2 + i * wall_height / 9
+            ax.plot([0, -hatch_len], [y_pos, y_pos - 0.03], 'k-', linewidth=1.5)
+        ax.text(0, -wall_height/2 - 0.08, 'A', fontsize=10, ha='center', fontweight='bold')
 
         # Ось x справа
         ax.annotate('', xy=(L * 1.06, 0), xytext=(L, 0),
@@ -394,13 +395,12 @@ class PlotCanvas(FigureCanvas):
                     arrowprops=dict(arrowstyle='->', color='blue', lw=2.5))
         ax.text(L + arrow_len, max_h/2 + 0.12, f'$F_3$={p.F3}', fontsize=9, ha='center', color='blue')
 
-        # Реакция RA - ОТ ЦЕНТРА ЗАДЕЛКИ ВЛЕВО, длинная стрелка
-        ra_arrow_len = L * 0.15
-        # Стрелка начинается в ЦЕНТРЕ заделки и идёт ВЛЕВО
-        ra_start_x = -wall_width / 2  # Центр заделки
-        ax.annotate('', xy=(ra_start_x - ra_arrow_len, 0), xytext=(ra_start_x, 0),
+        # Реакция RA - ОТ ЗАДЕЛКИ (x=0) ВЛЕВО
+        ra_arrow_len = L * 0.1
+        # Стрелка начинается на заделке (x=0) и идёт ВЛЕВО
+        ax.annotate('', xy=(-ra_arrow_len, 0), xytext=(0, 0),
                     arrowprops=dict(arrowstyle='->', color='green', lw=3))
-        ax.text(ra_start_x - ra_arrow_len/2, 0.15, f'$R_A$={r.RA:.1f}', fontsize=10, ha='center', color='green', fontweight='bold')
+        ax.text(0, 0.15, f'$R_A$={r.RA:.1f}', fontsize=10, ha='center', color='green', fontweight='bold')
 
         # Размер L
         y_dim = -max_h/2 - 0.15
@@ -418,8 +418,8 @@ class PlotCanvas(FigureCanvas):
         ax.axvline(x=L1, color='gray', linestyle='--', alpha=0.7, linewidth=1)
         ax.axvline(x=L1 + L2, color='gray', linestyle='--', alpha=0.7, linewidth=1)
 
-        # Расширяем xlim схемы, чтобы влезли заделка, реакция и F3
-        ax.set_xlim(-L*0.25, L*1.2)
+        # xlim ТАКОЙ ЖЕ как у эпюр для единых пунктирных линий
+        ax.set_xlim(xlim)
         ax.set_ylim(-max_h/2 - 0.35, max_h/2 + 0.5)
         # НЕ используем set_aspect - схема растягивается по ширине как эпюры
         ax.axis('off')
@@ -533,10 +533,15 @@ class PlotCanvas(FigureCanvas):
         ax.plot([0, 0], [0, 0], 'm-', linewidth=2)
         ax.plot([p.L, p.L], [0, solver._dl3], 'm-', linewidth=2)
 
-        # Подписи значений на границах
-        ax.text(p.L1, solver._dl1, f'{solver._dl1:.4f}', fontsize=8, color='purple', ha='center', va='bottom')
-        ax.text(p.L1 + p.L2, solver._dl2, f'{solver._dl2:.4f}', fontsize=8, color='purple', ha='center', va='bottom')
-        ax.text(p.L, solver._dl3, f'{solver._dl3:.4f}', fontsize=8, color='purple', ha='center', va='bottom')
+        # Вычисляем min/max для позиционирования
+        dl_min = min(dl_data)
+        dl_max = max(dl_data)
+
+        # Подписи значений на границах - приподняты чтобы не сливались с линией
+        offset = abs(dl_max) * 0.2 + 0.005  # Смещение вверх
+        ax.text(p.L1, solver._dl1 + offset, f'{solver._dl1:.4f}', fontsize=8, color='purple', ha='center', va='bottom')
+        ax.text(p.L1 + p.L2, solver._dl2 + offset, f'{solver._dl2:.4f}', fontsize=8, color='purple', ha='center', va='bottom')
+        ax.text(p.L, solver._dl3 + offset, f'{solver._dl3:.4f}', fontsize=8, color='purple', ha='center', va='bottom')
 
         # Точка пересечения с нулём
         if r.x0 is not None:
@@ -545,8 +550,6 @@ class PlotCanvas(FigureCanvas):
             ax.text(r.x0, -0.01, f'$x_0$={r.x0:.3f}', fontsize=7, color='black', ha='center', va='top')
 
         # ОДИН знак посередине всей эпюры (если вся в верхней или нижней полуплоскости)
-        dl_min = min(dl_data)
-        dl_max = max(dl_data)
 
         if dl_min >= 0:  # Вся эпюра в верхней полуплоскости
             ax.text(p.L / 2, dl_max / 2, '+', fontsize=14, ha='center', va='center',
