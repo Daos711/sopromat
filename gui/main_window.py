@@ -117,7 +117,7 @@ class MainWindow(QMainWindow):
         self.results_text = QTextEdit()
         self.results_text.setReadOnly(True)
         self.results_text.setFont(QFont("Courier New", 10))
-        self.results_text.setMinimumHeight(250)
+        self.results_text.setMinimumHeight(400)  # Увеличено для меньшего скроллинга
         self.results_text.setStyleSheet("""
             QTextEdit {
                 background-color: #f5f5f5;
@@ -127,9 +127,11 @@ class MainWindow(QMainWindow):
         """)
         results_layout.addWidget(self.results_text)
 
-        layout.addWidget(results_group)
+        layout.addWidget(results_group, stretch=1)  # stretch=1 чтобы занимало доступное место
 
-        # Описание задач
+        layout.addStretch()  # Пустое место перед справкой
+
+        # Описание задач - внизу панели
         info_group = QGroupBox("Справка")
         info_layout = QVBoxLayout(info_group)
         info_text = QLabel(
@@ -143,8 +145,6 @@ class MainWindow(QMainWindow):
         info_text.setFont(QFont("Arial", 9))
         info_layout.addWidget(info_text)
         layout.addWidget(info_group)
-
-        layout.addStretch()
 
         return panel
 

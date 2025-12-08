@@ -179,18 +179,18 @@ class PlotCanvas(FigureCanvas):
         # Эпюра участок 1 (заливка и линия)
         ax.fill_between(x1, 0, Q1, alpha=0.3, color='blue')
         ax.plot(x1, Q1, 'b-', linewidth=2)
-        # Замыкающие вертикальные линии для участка 1
-        ax.plot([0, 0], [0, Q1[0]], 'b-', linewidth=2)  # Слева
-        ax.plot([x1[-1], x1[-1]], [0, Q1[-1]], 'b-', linewidth=2)  # Справа (до точки разрыва)
+        # Замыкающая вертикальная линия ТОЛЬКО слева (x=0)
+        ax.plot([0, 0], [0, Q1[0]], 'b-', linewidth=2)
+        # НА ГРАНИЦЕ РАЗРЫВА (x=a) вертикальных линий НЕТ - только пунктир
 
         # Эпюра участок 2 (заливка и линия)
         ax.fill_between(x2, 0, Q2, alpha=0.3, color='blue')
         ax.plot(x2, Q2, 'b-', linewidth=2)
-        # Замыкающие вертикальные линии для участка 2
-        ax.plot([x2[0], x2[0]], [0, Q2[0]], 'b-', linewidth=2)  # Слева (от точки разрыва)
-        ax.plot([p.L, p.L], [0, Q2[-1]], 'b-', linewidth=2)  # Справа
+        # Замыкающая вертикальная линия ТОЛЬКО справа (x=L)
+        ax.plot([p.L, p.L], [0, Q2[-1]], 'b-', linewidth=2)
+        # НА ГРАНИЦЕ РАЗРЫВА (x=a) вертикальных линий НЕТ - только пунктир
 
-        # РАЗРЫВ ПЕРВОГО РОДА: участки НЕ соединены - между ними визуальный разрыв
+        # РАЗРЫВ ПЕРВОГО РОДА: участки НЕ соединены - между ними только пунктир
 
         # Подписи значений
         Q_at_0 = solver.Q(0)
@@ -198,7 +198,7 @@ class PlotCanvas(FigureCanvas):
         Q_at_a_right = solver.Q(p.a + 1e-9)
         Q_at_L = solver.Q(p.L)
 
-        ax.text(0, Q_at_0, f'{Q_at_0:.2f}', fontsize=9, color='blue', ha='center',
+        ax.text(0.05, Q_at_0, f'{Q_at_0:.2f}', fontsize=9, color='blue', ha='left',
                 va='bottom' if Q_at_0 >= 0 else 'top')
         ax.text(p.a - 0.05, Q_at_a_left, f'{Q_at_a_left:.2f}', fontsize=9, color='blue', ha='right',
                 va='bottom' if Q_at_a_left >= 0 else 'top')
@@ -235,22 +235,49 @@ class PlotCanvas(FigureCanvas):
             ax.text(center_x1, center_y1, '−', fontsize=16, ha='center', va='center',
                     fontweight='bold', color='blue', alpha=0.8)
 
-        # Область 2: от a до L (треугольник когда Q_at_L = 0)
-        # Центроид треугольника с вершинами (a,0), (a,Q_at_a_right), (L,0):
-        # x_c = (a + a + L) / 3 = (2a + L) / 3
-        # y_c = (0 + Q_at_a_right + 0) / 3 = Q_at_a_right / 3
-        if abs(Q_at_L) < 0.01:  # Треугольник (Q_at_L ≈ 0)
-            center_x2 = (2 * p.a + p.L) / 3
-            center_y2 = Q_at_a_right / 3
-        else:  # Трапеция
-            center_x2 = (p.a + p.L) / 2
-            center_y2 = (Q_at_a_right + Q_at_L) / 3
-        if Q_at_a_right > 0 or Q_at_L > 0:
-            ax.text(center_x2, center_y2, '+', fontsize=16, ha='center', va='center',
-                    fontweight='bold', color='blue', alpha=0.8)
-        elif Q_at_a_right < 0 or Q_at_L < 0:
-            ax.text(center_x2, center_y2, '−', fontsize=16, ha='center', va='center',
-                    fontweight='bold', color='blue', alpha=0.8)
+        # Область 2: от a до L
+        # Проверяем, пересекает ли Q(x) ноль на этом участке
+        if Q_at_a_right * Q_at_L < 0:  # Q меняет знак - есть пересечение с нулём
+            # Находим точку пересечения с нулём (линейная интерполяция)
+            x_zero = p.a + (0 - Q_at_a_right) * (p.L - p.a) / (Q_at_L - Q_at_a_right)
+
+            # Знак + в положительной части (где Q > 0)
+            if Q_at_a_right > 0:
+                # Положительная часть от a до x_zero (треугольник)
+                center_x_pos = (2 * p.a + x_zero) / 3
+                center_y_pos = Q_at_a_right / 3
+                ax.text(center_x_pos, center_y_pos, '+', fontsize=16, ha='center', va='center',
+                        fontweight='bold', color='blue', alpha=0.8)
+                # Отрицательная часть от x_zero до L (треугольник)
+                center_x_neg = (2 * x_zero + p.L) / 3
+                center_y_neg = Q_at_L / 3
+                ax.text(center_x_neg, center_y_neg, '−', fontsize=16, ha='center', va='center',
+                        fontweight='bold', color='blue', alpha=0.8)
+            else:
+                # Отрицательная часть от a до x_zero
+                center_x_neg = (2 * p.a + x_zero) / 3
+                center_y_neg = Q_at_a_right / 3
+                ax.text(center_x_neg, center_y_neg, '−', fontsize=16, ha='center', va='center',
+                        fontweight='bold', color='blue', alpha=0.8)
+                # Положительная часть от x_zero до L
+                center_x_pos = (2 * x_zero + p.L) / 3
+                center_y_pos = Q_at_L / 3
+                ax.text(center_x_pos, center_y_pos, '+', fontsize=16, ha='center', va='center',
+                        fontweight='bold', color='blue', alpha=0.8)
+        else:
+            # Q не меняет знак - один знак для всей области
+            if abs(Q_at_L) < 0.01:  # Треугольник (Q_at_L ≈ 0)
+                center_x2 = (2 * p.a + p.L) / 3
+                center_y2 = Q_at_a_right / 3
+            else:  # Трапеция
+                center_x2 = (p.a + p.L) / 2
+                center_y2 = (Q_at_a_right + Q_at_L) / 3
+            if Q_at_a_right > 0 or Q_at_L > 0:
+                ax.text(center_x2, center_y2, '+', fontsize=16, ha='center', va='center',
+                        fontweight='bold', color='blue', alpha=0.8)
+            elif Q_at_a_right < 0 or Q_at_L < 0:
+                ax.text(center_x2, center_y2, '−', fontsize=16, ha='center', va='center',
+                        fontweight='bold', color='blue', alpha=0.8)
 
         # Пунктир границы участков
         ax.axvline(x=p.a, color='gray', linestyle='--', alpha=0.7, linewidth=1)
