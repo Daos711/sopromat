@@ -115,9 +115,9 @@ class PlotCanvas(FigureCanvas):
         ax.plot([0, L], [q_y_top, q_y_top], 'b-', linewidth=2)
         ax.text(L/2, q_y_top + 0.05, f'q = {p.q} кН/м', fontsize=9, ha='center', color='blue')
 
-        # Сосредоточенная сила F
+        # Сосредоточенная сила F - от верха до БАЛКИ (не до линии q)
         F_y_top = q_y_top + 0.25
-        ax.annotate('', xy=(a, q_y_top), xytext=(a, F_y_top),
+        ax.annotate('', xy=(a, beam_height/2), xytext=(a, F_y_top),
                     arrowprops=dict(arrowstyle='->', color='red', lw=2.5))
         ax.text(a + L*0.02, F_y_top, f'F = {p.F} кН', fontsize=9, ha='left', va='center', color='red')
 
@@ -176,16 +176,17 @@ class PlotCanvas(FigureCanvas):
         # Эпюра участок 1 (заливка и линия)
         ax.fill_between(x1, 0, Q1, alpha=0.3, color='blue')
         ax.plot(x1, Q1, 'b-', linewidth=2)
-        # Замыкающие вертикальные линии участка 1
+        # Замыкающая вертикальная линия только слева (в точке разрыва НЕ соединяем)
         ax.plot([0, 0], [0, Q1[0]], 'b-', linewidth=2)
-        ax.plot([p.a, p.a], [0, Q1[-1]], 'b-', linewidth=2)
 
         # Эпюра участок 2 (заливка и линия)
         ax.fill_between(x2, 0, Q2, alpha=0.3, color='blue')
         ax.plot(x2, Q2, 'b-', linewidth=2)
-        # Замыкающие вертикальные линии участка 2
-        ax.plot([p.a, p.a], [0, Q2[0]], 'b-', linewidth=2)
+        # Замыкающая вертикальная линия только справа (в точке разрыва НЕ соединяем)
         ax.plot([p.L, p.L], [0, Q2[-1]], 'b-', linewidth=2)
+
+        # РАЗРЫВ ПЕРВОГО РОДА: в точке a пунктирная линия проходит через весь разрыв
+        # Вертикальные линии НЕ рисуем - это неустранимый разрыв
 
         # Подписи значений
         Q_at_0 = solver.Q(0)
@@ -309,8 +310,8 @@ class PlotCanvas(FigureCanvas):
         p = solver.params
         r = solver.results
 
-        # 4 подграфика без info панели - увеличенное расстояние чтобы не накладывались надписи
-        gs = self.fig.add_gridspec(4, 1, height_ratios=[1.2, 0.8, 0.8, 0.8], hspace=0.35)
+        # 4 подграфика без info панели - схема повыше
+        gs = self.fig.add_gridspec(4, 1, height_ratios=[1.5, 0.8, 0.8, 0.8], hspace=0.35)
 
         ax_scheme = self.fig.add_subplot(gs[0])
         ax_N = self.fig.add_subplot(gs[1])
@@ -372,11 +373,6 @@ class PlotCanvas(FigureCanvas):
             ax.plot([0, -hatch_len], [y_pos, y_pos - 0.03], 'k-', linewidth=1.5)
         ax.text(0, -wall_height/2 - 0.08, 'A', fontsize=10, ha='center', fontweight='bold')
 
-        # Ось x справа
-        ax.annotate('', xy=(L * 1.06, 0), xytext=(L, 0),
-                    arrowprops=dict(arrowstyle='->', color='black', lw=1.2))
-        ax.text(L * 1.07, 0, 'x', fontsize=10, va='center')
-
         # Силы - начинаются РОВНО на границах участков
         arrow_len = L * 0.08
 
@@ -390,17 +386,19 @@ class PlotCanvas(FigureCanvas):
                     arrowprops=dict(arrowstyle='->', color='red', lw=2.5))
         ax.text(L1 + L2 - arrow_len/2, max_h/2 + 0.12, f'$F_2$={p.F2}', fontsize=9, ha='center', color='red')
 
-        # F3 вправо - начинается РОВНО на конце L, хорошо видна
-        ax.annotate('', xy=(L + arrow_len*1.5, 0), xytext=(L, 0),
-                    arrowprops=dict(arrowstyle='->', color='blue', lw=2.5))
-        ax.text(L + arrow_len, max_h/2 + 0.12, f'$F_3$={p.F3}', fontsize=9, ha='center', color='blue')
+        # F3 вправо - от правой границы 3-го участка (x=L) вправо
+        # Вектор внутри видимой области, подпись справа
+        ax.annotate('', xy=(L - arrow_len*0.1, 0), xytext=(L - arrow_len, 0),
+                    arrowprops=dict(arrowstyle='->', color='blue', lw=2.5), clip_on=False)
+        ax.text(L, max_h/2 + 0.12, f'$F_3$={p.F3}', fontsize=9, ha='center', color='blue')
 
-        # Реакция RA - ОТ ЗАДЕЛКИ (x=0) ВЛЕВО
+        # Реакция RA - ОТ ЦЕНТРА ЗАДЕЛКИ ВЛЕВО (показываем модуль)
         ra_arrow_len = L * 0.1
         # Стрелка начинается на заделке (x=0) и идёт ВЛЕВО
         ax.annotate('', xy=(-ra_arrow_len, 0), xytext=(0, 0),
-                    arrowprops=dict(arrowstyle='->', color='green', lw=3))
-        ax.text(0, 0.15, f'$R_A$={r.RA:.1f}', fontsize=10, ha='center', color='green', fontweight='bold')
+                    arrowprops=dict(arrowstyle='->', color='green', lw=3), clip_on=False)
+        # Подпись рядом с концом вектора, показываем МОДУЛЬ (положительное значение)
+        ax.text(-ra_arrow_len - L*0.02, 0, f'$R_A$={abs(r.RA):.1f}', fontsize=10, ha='right', va='center', color='green', fontweight='bold')
 
         # Размер L
         y_dim = -max_h/2 - 0.15
@@ -537,8 +535,8 @@ class PlotCanvas(FigureCanvas):
         dl_min = min(dl_data)
         dl_max = max(dl_data)
 
-        # Подписи значений на границах - приподняты чтобы не сливались с линией
-        offset = abs(dl_max) * 0.2 + 0.005  # Смещение вверх
+        # Подписи значений на границах - немного выше точек
+        offset = abs(dl_max) * 0.08 + 0.003  # Небольшое смещение вверх
         ax.text(p.L1, solver._dl1 + offset, f'{solver._dl1:.4f}', fontsize=8, color='purple', ha='center', va='bottom')
         ax.text(p.L1 + p.L2, solver._dl2 + offset, f'{solver._dl2:.4f}', fontsize=8, color='purple', ha='center', va='bottom')
         ax.text(p.L, solver._dl3 + offset, f'{solver._dl3:.4f}', fontsize=8, color='purple', ha='center', va='bottom')
