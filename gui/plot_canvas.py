@@ -34,14 +34,14 @@ class PlotCanvas(FigureCanvas):
         r = solver.results
 
         # 3 подграфика: схема, Q(x), M(x) - без info панели
-        gs = self.fig.add_gridspec(3, 1, height_ratios=[1.2, 1, 1], hspace=0.35)
+        gs = self.fig.add_gridspec(3, 1, height_ratios=[1.2, 1, 1], hspace=0.15)
 
         ax_scheme = self.fig.add_subplot(gs[0])
         ax_Q = self.fig.add_subplot(gs[1])
         ax_M = self.fig.add_subplot(gs[2])
 
-        # Общие xlim для всех графиков
-        xlim = (-0.1, p.L + 0.1)
+        # Общие xlim для всех графиков - РОВНО от 0 до L, без отступов
+        xlim = (0, p.L)
 
         # --- Схема балки ---
         self._draw_beam_scheme(ax_scheme, p, r, xlim)
@@ -61,18 +61,18 @@ class PlotCanvas(FigureCanvas):
         a = p.a
 
         # Балка
-        beam_height = 0.12
+        beam_height = 0.08
         ax.add_patch(Rectangle((0, -beam_height/2), L, beam_height,
                                 facecolor='lightblue', edgecolor='black', linewidth=2))
 
         # Ось x - справа от балки
-        ax.annotate('', xy=(L + 0.3, 0), xytext=(L, 0),
+        ax.annotate('', xy=(L * 1.08, 0), xytext=(L, 0),
                     arrowprops=dict(arrowstyle='->', color='black', lw=1.5))
-        ax.text(L + 0.35, 0, 'x', fontsize=11, va='center')
+        ax.text(L * 1.09, 0, 'x', fontsize=10, va='center')
 
         # Опора A (шарнирно-неподвижная)
-        triangle_h = 0.15
-        triangle_w = 0.20
+        triangle_h = 0.12
+        triangle_w = L * 0.06
         triangle = Polygon([
             (0, -beam_height/2),
             (-triangle_w/2, -beam_height/2 - triangle_h),
@@ -81,11 +81,11 @@ class PlotCanvas(FigureCanvas):
         ax.add_patch(triangle)
         # Штриховка
         ground_y = -beam_height/2 - triangle_h
-        ax.plot([-triangle_w/2 - 0.03, triangle_w/2 + 0.03], [ground_y, ground_y], 'k-', linewidth=1.5)
+        ax.plot([-triangle_w/2 - L*0.01, triangle_w/2 + L*0.01], [ground_y, ground_y], 'k-', linewidth=1.5)
         for i in range(5):
             x_start = -triangle_w/2 + i * triangle_w / 4
-            ax.plot([x_start, x_start - 0.04], [ground_y, ground_y - 0.05], 'k-', linewidth=1)
-        ax.text(0, ground_y - 0.12, 'A', fontsize=10, ha='center', fontweight='bold')
+            ax.plot([x_start, x_start - L*0.015], [ground_y, ground_y - 0.04], 'k-', linewidth=1)
+        ax.text(0, ground_y - 0.08, 'A', fontsize=10, ha='center', fontweight='bold')
 
         # Опора B (шарнирно-подвижная)
         triangle_B = Polygon([
@@ -95,62 +95,60 @@ class PlotCanvas(FigureCanvas):
         ], facecolor='lightgray', edgecolor='black', linewidth=1.5)
         ax.add_patch(triangle_B)
         # Ролики
-        roller_y = -beam_height/2 - triangle_h - 0.03
-        for dx in [-0.05, 0, 0.05]:
-            circle = plt.Circle((L + dx, roller_y), 0.025,
+        roller_y = -beam_height/2 - triangle_h - 0.025
+        for dx in [-L*0.015, 0, L*0.015]:
+            circle = plt.Circle((L + dx, roller_y), L*0.008,
                                  facecolor='white', edgecolor='black', linewidth=1)
             ax.add_patch(circle)
-        ax.plot([L - triangle_w/2 - 0.03, L + triangle_w/2 + 0.03],
-                [roller_y - 0.03, roller_y - 0.03], 'k-', linewidth=1.5)
-        ax.text(L, roller_y - 0.1, 'B', fontsize=10, ha='center', fontweight='bold')
+        ax.plot([L - triangle_w/2 - L*0.01, L + triangle_w/2 + L*0.01],
+                [roller_y - 0.02, roller_y - 0.02], 'k-', linewidth=1.5)
+        ax.text(L, roller_y - 0.07, 'B', fontsize=10, ha='center', fontweight='bold')
 
         # Распределённая нагрузка q
-        q_y_top = beam_height/2 + 0.25
-        n_arrows = 10
+        q_y_top = beam_height/2 + 0.18
+        n_arrows = 12
         arrow_spacing = L / n_arrows
         for i in range(n_arrows + 1):
             x = i * arrow_spacing
             ax.annotate('', xy=(x, beam_height/2), xytext=(x, q_y_top),
                         arrowprops=dict(arrowstyle='->', color='blue', lw=1))
         ax.plot([0, L], [q_y_top, q_y_top], 'b-', linewidth=2)
-        ax.text(L/2, q_y_top + 0.08, f'q = {p.q} кН/м', fontsize=9, ha='center', color='blue')
+        ax.text(L/2, q_y_top + 0.05, f'q = {p.q} кН/м', fontsize=9, ha='center', color='blue')
 
         # Сосредоточенная сила F
-        F_y_top = q_y_top + 0.35
+        F_y_top = q_y_top + 0.25
         ax.annotate('', xy=(a, q_y_top), xytext=(a, F_y_top),
                     arrowprops=dict(arrowstyle='->', color='red', lw=2.5))
-        ax.text(a + 0.1, F_y_top - 0.05, f'F = {p.F} кН', fontsize=9, ha='left', color='red')
+        ax.text(a + L*0.02, F_y_top, f'F = {p.F} кН', fontsize=9, ha='left', va='center', color='red')
 
-        # Реакции СВЕРХУ над опорами (как на примере)
-        react_y_bottom = q_y_top + 0.05
-        react_y_top = react_y_bottom + 0.25
-        # RA
-        ax.annotate('', xy=(0, react_y_bottom), xytext=(0, react_y_top),
+        # Реакции ОТ ОПОРЫ ВВЕРХ (стрелка начинается на опоре, идёт вверх)
+        react_len = 0.2
+        # RA - от опоры A вверх
+        ax.annotate('', xy=(0, -beam_height/2 + react_len), xytext=(0, -beam_height/2),
                     arrowprops=dict(arrowstyle='->', color='green', lw=2))
-        ax.text(0, react_y_top + 0.05, f'$R_A$={r.RA:.1f}', fontsize=9, color='green', ha='center')
-        # RB
-        ax.annotate('', xy=(L, react_y_bottom), xytext=(L, react_y_top),
+        ax.text(-L*0.02, -beam_height/2 + react_len/2, f'$R_A$={r.RA:.1f}', fontsize=8, color='green', ha='right', va='center')
+        # RB - от опоры B вверх
+        ax.annotate('', xy=(L, -beam_height/2 + react_len), xytext=(L, -beam_height/2),
                     arrowprops=dict(arrowstyle='->', color='green', lw=2))
-        ax.text(L, react_y_top + 0.05, f'$R_B$={r.RB:.1f}', fontsize=9, color='green', ha='center')
+        ax.text(L + L*0.02, -beam_height/2 + react_len/2, f'$R_B$={r.RB:.1f}', fontsize=8, color='green', ha='left', va='center')
 
         # Размеры
-        y_dim_a = -beam_height/2 - triangle_h - 0.25
-        y_dim_L = y_dim_a - 0.18
+        y_dim_a = ground_y - 0.12
+        y_dim_L = y_dim_a - 0.12
 
         ax.annotate('', xy=(a, y_dim_a), xytext=(0, y_dim_a),
                     arrowprops=dict(arrowstyle='<->', color='dimgray', lw=1))
-        ax.text(a/2, y_dim_a + 0.05, f'a = {a:.2f} м', fontsize=8, ha='center', color='dimgray')
+        ax.text(a/2, y_dim_a + 0.04, f'a = {a:.2f} м', fontsize=8, ha='center', color='dimgray')
 
         ax.annotate('', xy=(L, y_dim_L), xytext=(0, y_dim_L),
                     arrowprops=dict(arrowstyle='<->', color='dimgray', lw=1))
-        ax.text(L/2, y_dim_L + 0.05, f'L = {L:.2f} м', fontsize=8, ha='center', color='dimgray')
+        ax.text(L/2, y_dim_L + 0.04, f'L = {L:.2f} м', fontsize=8, ha='center', color='dimgray')
 
-        # Пунктир от силы F вниз (граница участков)
+        # Пунктир от силы F вниз (граница участков) - будет продолжен на эпюрах
         ax.axvline(x=a, color='gray', linestyle='--', alpha=0.7, linewidth=1)
 
         ax.set_xlim(xlim)
-        ax.set_ylim(-0.7, 1.0)
-        ax.set_aspect('equal', adjustable='datalim')
+        ax.set_ylim(-0.55, 0.55)
         ax.axis('off')
         ax.set_title(f'Задача 2. Вариант {p.N}', fontsize=13, fontweight='bold', pad=3)
 
@@ -301,15 +299,15 @@ class PlotCanvas(FigureCanvas):
         r = solver.results
 
         # 4 подграфика без info панели
-        gs = self.fig.add_gridspec(4, 1, height_ratios=[1.0, 0.8, 0.8, 0.8], hspace=0.4)
+        gs = self.fig.add_gridspec(4, 1, height_ratios=[1.0, 0.8, 0.8, 0.8], hspace=0.15)
 
         ax_scheme = self.fig.add_subplot(gs[0])
         ax_N = self.fig.add_subplot(gs[1])
         ax_sigma = self.fig.add_subplot(gs[2])
         ax_dl = self.fig.add_subplot(gs[3])
 
-        # Общие xlim для всех графиков
-        xlim = (-0.05, p.L + 0.05)
+        # Общие xlim для всех графиков - РОВНО от 0 до L, без отступов
+        xlim = (0, p.L)
 
         # --- Схема стержня ---
         self._draw_rod_scheme(ax_scheme, p, r, xlim)
@@ -331,11 +329,12 @@ class PlotCanvas(FigureCanvas):
         L = p.L
         L1, L2, L3 = p.L1, p.L2, p.L3
 
-        # Высоты участков (пропорционально площадям)
+        # Высоты участков (пропорционально площадям) - в относительных единицах
         max_A = max(p.A1, p.A2, p.A3)
-        h1 = 0.18 * p.A1 / max_A + 0.06
-        h2 = 0.18 * p.A2 / max_A + 0.06
-        h3 = 0.18 * p.A3 / max_A + 0.06
+        base_h = 0.25
+        h1 = base_h * p.A1 / max_A + 0.08
+        h2 = base_h * p.A2 / max_A + 0.08
+        h3 = base_h * p.A3 / max_A + 0.08
         max_h = max(h1, h2, h3)
 
         # Участки
@@ -347,66 +346,68 @@ class PlotCanvas(FigureCanvas):
                                 facecolor='lightyellow', edgecolor='black', linewidth=1.5))
 
         # Подписи площадей выше участков
-        ax.text(L1/2, h1/2 + 0.04, f'$A_1$={p.A1}', fontsize=8, ha='center', va='bottom')
-        ax.text(L1 + L2/2, h2/2 + 0.04, f'$A_2$={p.A2}', fontsize=8, ha='center', va='bottom')
-        ax.text(L1 + L2 + L3/2, h3/2 + 0.04, f'$A_3$={p.A3}', fontsize=8, ha='center', va='bottom')
+        ax.text(L1/2, h1/2 + 0.05, f'$A_1$={p.A1}', fontsize=8, ha='center', va='bottom')
+        ax.text(L1 + L2/2, h2/2 + 0.05, f'$A_2$={p.A2}', fontsize=8, ha='center', va='bottom')
+        ax.text(L1 + L2 + L3/2, h3/2 + 0.05, f'$A_3$={p.A3}', fontsize=8, ha='center', va='bottom')
 
-        # Заделка
-        wall_width = 0.03
-        wall_height = max_h + 0.1
+        # Заделка - слева от 0
+        wall_width = L * 0.03
+        wall_height = max_h + 0.15
         ax.add_patch(Rectangle((-wall_width, -wall_height/2), wall_width, wall_height,
                                 facecolor='gray', edgecolor='black'))
-        for i in range(6):
-            y_start = -wall_height/2 + i * wall_height / 5
-            ax.plot([-wall_width, -wall_width - 0.03], [y_start, y_start - 0.02], 'k-', linewidth=1)
-        ax.text(-wall_width - 0.02, -wall_height/2 - 0.06, 'A', fontsize=9, ha='center', fontweight='bold')
+        for i in range(7):
+            y_start = -wall_height/2 + i * wall_height / 6
+            ax.plot([-wall_width, -wall_width - L*0.02], [y_start, y_start - 0.03], 'k-', linewidth=1)
+        ax.text(0, -wall_height/2 - 0.08, 'A', fontsize=9, ha='center', fontweight='bold')
 
         # Ось x справа
-        ax.annotate('', xy=(L + 0.1, 0), xytext=(L, 0),
+        ax.annotate('', xy=(L * 1.06, 0), xytext=(L, 0),
                     arrowprops=dict(arrowstyle='->', color='black', lw=1.2))
-        ax.text(L + 0.12, 0, 'x', fontsize=10, va='center')
+        ax.text(L * 1.07, 0, 'x', fontsize=10, va='center')
 
-        # Силы
-        ax.annotate('', xy=(L1 + 0.04, 0), xytext=(L1 - 0.03, 0),
+        # Силы - пропорционально длине
+        arrow_len = L * 0.05
+        # F1 вправо на границе L1
+        ax.annotate('', xy=(L1 + arrow_len, 0), xytext=(L1 - arrow_len*0.3, 0),
                     arrowprops=dict(arrowstyle='->', color='blue', lw=2))
-        ax.text(L1, max_h/2 + 0.12, f'$F_1$={p.F1}', fontsize=8, ha='center', color='blue')
+        ax.text(L1, max_h/2 + 0.15, f'$F_1$={p.F1}', fontsize=8, ha='center', color='blue')
 
-        ax.annotate('', xy=(L1 + L2 - 0.04, 0), xytext=(L1 + L2 + 0.03, 0),
+        # F2 влево на границе L1+L2
+        ax.annotate('', xy=(L1 + L2 - arrow_len, 0), xytext=(L1 + L2 + arrow_len*0.3, 0),
                     arrowprops=dict(arrowstyle='->', color='red', lw=2))
-        ax.text(L1 + L2, max_h/2 + 0.12, f'$F_2$={p.F2}', fontsize=8, ha='center', color='red')
+        ax.text(L1 + L2, max_h/2 + 0.15, f'$F_2$={p.F2}', fontsize=8, ha='center', color='red')
 
-        ax.annotate('', xy=(L + 0.06, 0), xytext=(L, 0),
+        # F3 вправо на конце L
+        ax.annotate('', xy=(L + arrow_len, 0), xytext=(L, 0),
                     arrowprops=dict(arrowstyle='->', color='blue', lw=2))
-        ax.text(L + 0.03, max_h/2 + 0.12, f'$F_3$={p.F3}', fontsize=8, ha='left', color='blue')
+        ax.text(L + arrow_len*0.5, max_h/2 + 0.15, f'$F_3$={p.F3}', fontsize=8, ha='left', color='blue')
 
-        # Реакция RA слева
-        if r.RA > 0:
-            ax.annotate('', xy=(-wall_width + 0.08, 0), xytext=(-wall_width - 0.06, 0),
-                        arrowprops=dict(arrowstyle='->', color='green', lw=2))
-        else:
-            ax.annotate('', xy=(-wall_width - 0.06, 0), xytext=(-wall_width + 0.08, 0),
-                        arrowprops=dict(arrowstyle='->', color='green', lw=2))
-        ax.text(-wall_width - 0.07, 0.08, f'$R_A$={r.RA:.1f}', fontsize=7, ha='center', color='green')
+        # Реакция RA - ОТ ЛЕВОГО КРАЯ ЗАДЕЛКИ ВЛЕВО, длинная стрелка
+        ra_arrow_len = L * 0.12
+        # Стрелка идёт ВЛЕВО от заделки
+        ax.annotate('', xy=(-wall_width - ra_arrow_len, 0), xytext=(-wall_width, 0),
+                    arrowprops=dict(arrowstyle='->', color='green', lw=2.5))
+        ax.text(-wall_width - ra_arrow_len/2, 0.12, f'$R_A$={r.RA:.1f}', fontsize=8, ha='center', color='green')
 
         # Размер L
-        y_dim = -max_h/2 - 0.12
+        y_dim = -max_h/2 - 0.15
         ax.annotate('', xy=(L, y_dim), xytext=(0, y_dim),
                     arrowprops=dict(arrowstyle='<->', color='dimgray', lw=0.8))
-        ax.text(L/2, y_dim + 0.04, f'L={L:.2f}м', fontsize=7, ha='center', color='dimgray')
+        ax.text(L/2, y_dim + 0.05, f'L={L:.2f}м', fontsize=8, ha='center', color='dimgray')
 
-        # Длины участков
-        y_len = max_h/2 + 0.22
-        ax.text(L1/2, y_len, f'$L_1$={L1:.2f}', fontsize=6, ha='center', color='gray')
-        ax.text(L1 + L2/2, y_len, f'$L_2$={L2:.2f}', fontsize=6, ha='center', color='gray')
-        ax.text(L1 + L2 + L3/2, y_len, f'$L_3$={L3:.2f}', fontsize=6, ha='center', color='gray')
+        # Длины участков сверху
+        y_len = max_h/2 + 0.28
+        ax.text(L1/2, y_len, f'$L_1$={L1:.2f}', fontsize=7, ha='center', color='gray')
+        ax.text(L1 + L2/2, y_len, f'$L_2$={L2:.2f}', fontsize=7, ha='center', color='gray')
+        ax.text(L1 + L2 + L3/2, y_len, f'$L_3$={L3:.2f}', fontsize=7, ha='center', color='gray')
 
-        # Пунктиры границ участков
+        # Пунктиры границ участков - единые с эпюрами
         ax.axvline(x=L1, color='gray', linestyle='--', alpha=0.7, linewidth=1)
         ax.axvline(x=L1 + L2, color='gray', linestyle='--', alpha=0.7, linewidth=1)
 
         ax.set_xlim(xlim)
-        ax.set_ylim(-max_h/2 - 0.25, max_h/2 + 0.35)
-        ax.set_aspect('equal', adjustable='datalim')
+        ax.set_ylim(-max_h/2 - 0.3, max_h/2 + 0.45)
+        # НЕ используем set_aspect - схема растягивается по ширине как эпюры
         ax.axis('off')
         ax.set_title(f'Задача 3. Вариант {p.N}', fontsize=12, fontweight='bold', pad=3)
 
