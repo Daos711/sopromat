@@ -30,8 +30,8 @@ class PlotCanvas(FigureCanvas):
         self.fig.clear()
 
         # 4 подграфика: схема, Q(x), M(x), результаты
-        gs = self.fig.add_gridspec(4, 1, height_ratios=[1.2, 1, 1, 0.5],
-                                    hspace=0.3)
+        gs = self.fig.add_gridspec(4, 1, height_ratios=[1.0, 1, 1, 0.3],
+                                    hspace=0.5)
 
         ax_scheme = self.fig.add_subplot(gs[0])
         ax_Q = self.fig.add_subplot(gs[1])
@@ -140,10 +140,9 @@ class PlotCanvas(FigureCanvas):
         ax.text(L + 0.1, -beam_height/2 - 0.25, f'$R_B$={r.RB:.1f}', fontsize=10, color='green')
 
         ax.set_xlim(-0.5, L + 0.7)
-        ax.set_ylim(-1.5, 1.2)
-        ax.set_aspect('equal')
+        ax.set_ylim(-1.3, 1.1)
         ax.axis('off')
-        ax.set_title(f'Задача 2. Вариант {p.N}', fontsize=14, fontweight='bold')
+        ax.set_title(f'Задача 2. Вариант {p.N}', fontsize=14, fontweight='bold', pad=5)
 
     def _draw_Q_diagram(self, ax, solver):
         """Рисование эпюры поперечных сил Q(x)"""
@@ -189,9 +188,10 @@ class PlotCanvas(FigureCanvas):
             ax.text((p.a + p.L)/2, Q_min/2, '−', fontsize=16, ha='center', va='center')
 
         ax.set_xlim(-0.1, p.L + 0.1)
-        ax.set_ylabel('Q, кН', fontsize=11)
-        ax.set_title('Эпюра Q(x)', fontsize=12)
+        ax.set_ylabel('Q, кН', fontsize=10)
+        ax.set_title('Эпюра Q(x)', fontsize=11, pad=3)
         ax.grid(True, alpha=0.3)
+        ax.tick_params(axis='both', labelsize=9)
 
         # Отметка точки a
         ax.axvline(x=p.a, color='gray', linestyle='--', alpha=0.5)
@@ -235,10 +235,11 @@ class PlotCanvas(FigureCanvas):
             ax.text(r.x_max, M_max/2, '+', fontsize=16, ha='center', va='center')
 
         ax.set_xlim(-0.1, p.L + 0.1)
-        ax.set_xlabel('x, м', fontsize=11)
-        ax.set_ylabel('M, кН·м', fontsize=11)
-        ax.set_title('Эпюра M(x)', fontsize=12)
+        ax.set_xlabel('x, м', fontsize=10)
+        ax.set_ylabel('M, кН·м', fontsize=10)
+        ax.set_title('Эпюра M(x)', fontsize=11, pad=3)
         ax.grid(True, alpha=0.3)
+        ax.tick_params(axis='both', labelsize=9)
 
         # Отметка точки a
         ax.axvline(x=p.a, color='gray', linestyle='--', alpha=0.5)
@@ -248,14 +249,13 @@ class PlotCanvas(FigureCanvas):
         ax.axis('off')
 
         info_text = (
-            f"Исходные данные: L = {p.L:.2f} м,  a = {p.a:.2f} м,  "
-            f"q = {p.q} кН/м,  F = {p.F} кН\n"
-            f"Результаты: $R_A$ = {r.RA:.1f} кН,  $R_B$ = {r.RB:.1f} кН,  "
-            f"$x_{{max}}$ = {r.x_max:.2f} м,  $M_{{max}}$ = {r.M_max:.1f} кН·м  ({r.max_loc})"
+            f"L={p.L:.2f}м, a={p.a:.2f}м, q={p.q}кН/м, F={p.F}кН  |  "
+            f"$R_A$={r.RA:.1f}кН, $R_B$={r.RB:.1f}кН, "
+            f"$x_{{max}}$={r.x_max:.2f}м, $M_{{max}}$={r.M_max:.1f}кН·м ({r.max_loc})"
         )
 
         ax.text(0.5, 0.5, info_text, transform=ax.transAxes,
-                fontsize=11, ha='center', va='center',
+                fontsize=9, ha='center', va='center',
                 bbox=dict(boxstyle='round', facecolor='lightyellow', alpha=0.8))
 
     def plot_task3(self, solver):
@@ -263,8 +263,8 @@ class PlotCanvas(FigureCanvas):
         self.fig.clear()
 
         # 5 подграфиков: схема, N(x), σ(x), Δl(x), результаты
-        gs = self.fig.add_gridspec(5, 1, height_ratios=[1.2, 0.8, 0.8, 0.8, 0.4],
-                                    hspace=0.35)
+        gs = self.fig.add_gridspec(5, 1, height_ratios=[1.0, 0.8, 0.8, 0.8, 0.25],
+                                    hspace=0.55)
 
         ax_scheme = self.fig.add_subplot(gs[0])
         ax_N = self.fig.add_subplot(gs[1])
@@ -298,90 +298,86 @@ class PlotCanvas(FigureCanvas):
         L = p.L
         L1, L2, L3 = p.L1, p.L2, p.L3
 
+        # Нормализуем координаты для лучшего отображения
+        scale = 1.0 / L  # масштаб для нормализации
+
         # Высоты участков (пропорционально площадям)
         max_A = max(p.A1, p.A2, p.A3)
-        h1 = 0.3 * p.A1 / max_A + 0.15
-        h2 = 0.3 * p.A2 / max_A + 0.15
-        h3 = 0.3 * p.A3 / max_A + 0.15
+        h1 = 0.25 * p.A1 / max_A + 0.1
+        h2 = 0.25 * p.A2 / max_A + 0.1
+        h3 = 0.25 * p.A3 / max_A + 0.1
 
         # Участок 1
         ax.add_patch(Rectangle((0, -h1/2), L1, h1,
                                 facecolor='lightblue', edgecolor='black', linewidth=1.5))
-        ax.text(L1/2, 0, f'$A_1$={p.A1}', fontsize=9, ha='center', va='center')
+        ax.text(L1/2, 0, f'$A_1$={p.A1}', fontsize=8, ha='center', va='center')
 
         # Участок 2
         ax.add_patch(Rectangle((L1, -h2/2), L2, h2,
                                 facecolor='lightgreen', edgecolor='black', linewidth=1.5))
-        ax.text(L1 + L2/2, 0, f'$A_2$={p.A2}', fontsize=9, ha='center', va='center')
+        ax.text(L1 + L2/2, 0, f'$A_2$={p.A2}', fontsize=8, ha='center', va='center')
 
         # Участок 3
         ax.add_patch(Rectangle((L1 + L2, -h3/2), L3, h3,
                                 facecolor='lightyellow', edgecolor='black', linewidth=1.5))
-        ax.text(L1 + L2 + L3/2, 0, f'$A_3$={p.A3}', fontsize=9, ha='center', va='center')
+        ax.text(L1 + L2 + L3/2, 0, f'$A_3$={p.A3}', fontsize=8, ha='center', va='center')
 
         # Заделка слева
-        wall_width = 0.05
-        ax.add_patch(Rectangle((-wall_width, -0.4), wall_width, 0.8,
+        wall_width = 0.03
+        ax.add_patch(Rectangle((-wall_width, -0.3), wall_width, 0.6,
                                 facecolor='gray', edgecolor='black'))
         # Штриховка заделки
-        for i in range(8):
-            y_start = -0.35 + i * 0.1
-            ax.plot([-wall_width, -wall_width - 0.08], [y_start, y_start - 0.05],
+        for i in range(6):
+            y_start = -0.25 + i * 0.1
+            ax.plot([-wall_width, -wall_width - 0.05], [y_start, y_start - 0.04],
                     'k-', linewidth=1)
-        ax.text(-0.1, -0.5, 'A', fontsize=11, ha='center')
+        ax.text(-0.06, -0.38, 'A', fontsize=10, ha='center')
 
         # Ось x
-        ax.annotate('', xy=(L + 0.15, 0), xytext=(-0.15, 0),
+        ax.annotate('', xy=(L + 0.1, 0), xytext=(-0.08, 0),
                     arrowprops=dict(arrowstyle='->', color='black', lw=1))
-        ax.text(L + 0.18, 0, 'x', fontsize=11, va='center')
+        ax.text(L + 0.12, 0, 'x', fontsize=10, va='center')
 
         # Сила F1 (вправо, в точке L1)
-        ax.annotate('', xy=(L1 + 0.15, 0), xytext=(L1 - 0.05, 0),
-                    arrowprops=dict(arrowstyle='->', color='blue', lw=2.5))
-        ax.text(L1, 0.35, f'$F_1$={p.F1}', fontsize=10, ha='center', color='blue')
+        ax.annotate('', xy=(L1 + 0.08, 0), xytext=(L1 - 0.02, 0),
+                    arrowprops=dict(arrowstyle='->', color='blue', lw=2))
+        ax.text(L1, 0.28, f'$F_1$={p.F1}', fontsize=9, ha='center', color='blue')
 
         # Сила F2 (влево, в точке L1+L2)
-        ax.annotate('', xy=(L1 + L2 - 0.15, 0), xytext=(L1 + L2 + 0.05, 0),
-                    arrowprops=dict(arrowstyle='->', color='red', lw=2.5))
-        ax.text(L1 + L2, 0.35, f'$F_2$={p.F2}', fontsize=10, ha='center', color='red')
+        ax.annotate('', xy=(L1 + L2 - 0.08, 0), xytext=(L1 + L2 + 0.02, 0),
+                    arrowprops=dict(arrowstyle='->', color='red', lw=2))
+        ax.text(L1 + L2, 0.28, f'$F_2$={p.F2}', fontsize=9, ha='center', color='red')
 
         # Сила F3 (вправо, в точке L)
-        ax.annotate('', xy=(L + 0.15, 0), xytext=(L - 0.05, 0),
-                    arrowprops=dict(arrowstyle='->', color='blue', lw=2.5))
-        ax.text(L + 0.05, 0.35, f'$F_3$={p.F3}', fontsize=10, ha='left', color='blue')
+        ax.annotate('', xy=(L + 0.1, 0), xytext=(L - 0.02, 0),
+                    arrowprops=dict(arrowstyle='->', color='blue', lw=2))
+        ax.text(L + 0.02, 0.28, f'$F_3$={p.F3}', fontsize=9, ha='left', color='blue')
 
         # Реакция RA
         if r.RA > 0:  # вправо
-            ax.annotate('', xy=(0.1, -0.25), xytext=(-0.05, -0.25),
+            ax.annotate('', xy=(0.06, -0.18), xytext=(-0.02, -0.18),
                         arrowprops=dict(arrowstyle='->', color='green', lw=2))
         else:  # влево
-            ax.annotate('', xy=(-0.05, -0.25), xytext=(0.1, -0.25),
+            ax.annotate('', xy=(-0.02, -0.18), xytext=(0.06, -0.18),
                         arrowprops=dict(arrowstyle='->', color='green', lw=2))
-        ax.text(0.05, -0.4, f'$R_A$={r.RA:.1f}', fontsize=9, ha='center', color='green')
+        ax.text(0.02, -0.28, f'$R_A$={r.RA:.1f}', fontsize=8, ha='center', color='green')
 
-        # Размеры
-        y_dim = -0.55
-        ax.plot([0, 0], [y_dim, y_dim + 0.05], 'k-', lw=1)
-        ax.plot([L1, L1], [y_dim, y_dim + 0.05], 'k-', lw=1)
-        ax.annotate('', xy=(L1, y_dim), xytext=(0, y_dim),
-                    arrowprops=dict(arrowstyle='<->', color='black', lw=1))
-        ax.text(L1/2, y_dim - 0.08, f'$L_1$={L1:.2f}', fontsize=9, ha='center')
+        # Размеры - на одной линии, компактно
+        y_dim = -0.42
+        # Общая длина L
+        ax.annotate('', xy=(L, y_dim), xytext=(0, y_dim),
+                    arrowprops=dict(arrowstyle='<->', color='black', lw=0.8))
+        ax.text(L/2, y_dim - 0.06, f'L={L:.2f}м', fontsize=8, ha='center')
 
-        ax.plot([L1 + L2, L1 + L2], [y_dim, y_dim + 0.05], 'k-', lw=1)
-        ax.annotate('', xy=(L1 + L2, y_dim), xytext=(L1, y_dim),
-                    arrowprops=dict(arrowstyle='<->', color='black', lw=1))
-        ax.text(L1 + L2/2, y_dim - 0.08, f'$L_2$={L2:.2f}', fontsize=9, ha='center')
+        # Подписи участков сверху схемы
+        ax.text(L1/2, 0.4, f'$L_1$={L1:.2f}', fontsize=7, ha='center', color='gray')
+        ax.text(L1 + L2/2, 0.4, f'$L_2$={L2:.2f}', fontsize=7, ha='center', color='gray')
+        ax.text(L1 + L2 + L3/2, 0.4, f'$L_3$={L3:.2f}', fontsize=7, ha='center', color='gray')
 
-        ax.plot([L, L], [y_dim, y_dim + 0.05], 'k-', lw=1)
-        ax.annotate('', xy=(L, y_dim), xytext=(L1 + L2, y_dim),
-                    arrowprops=dict(arrowstyle='<->', color='black', lw=1))
-        ax.text(L1 + L2 + L3/2, y_dim - 0.08, f'$L_3$={L3:.2f}', fontsize=9, ha='center')
-
-        ax.set_xlim(-0.25, L + 0.35)
-        ax.set_ylim(-0.75, 0.55)
-        ax.set_aspect('equal')
+        ax.set_xlim(-0.15, L + 0.2)
+        ax.set_ylim(-0.55, 0.5)
         ax.axis('off')
-        ax.set_title(f'Задача 3. Вариант {p.N}', fontsize=14, fontweight='bold')
+        ax.set_title(f'Задача 3. Вариант {p.N}', fontsize=13, fontweight='bold', pad=3)
 
     def _draw_N_diagram(self, ax, solver):
         """Рисование эпюры продольных сил N(x)"""
@@ -426,9 +422,10 @@ class PlotCanvas(FigureCanvas):
             ax.text(p.L1 + p.L2 + p.L3/2, r.N3/2, '+', fontsize=12, ha='center', va='center')
 
         ax.set_xlim(-0.05, p.L + 0.05)
-        ax.set_ylabel('N, кН', fontsize=10)
-        ax.set_title('Эпюра N(x)', fontsize=11)
+        ax.set_ylabel('N, кН', fontsize=9)
+        ax.set_title('Эпюра N(x)', fontsize=10, pad=2)
         ax.grid(True, alpha=0.3)
+        ax.tick_params(axis='both', labelsize=8)
 
     def _draw_sigma_diagram(self, ax, solver):
         """Рисование эпюры напряжений σ(x)"""
@@ -456,9 +453,10 @@ class PlotCanvas(FigureCanvas):
                         xytext=(0, offset_y), ha='center', fontsize=9, color='green')
 
         ax.set_xlim(-0.05, p.L + 0.05)
-        ax.set_ylabel('σ, МПа', fontsize=10)
-        ax.set_title('Эпюра σ(x)', fontsize=11)
+        ax.set_ylabel('σ, МПа', fontsize=9)
+        ax.set_title('Эпюра σ(x)', fontsize=10, pad=2)
         ax.grid(True, alpha=0.3)
+        ax.tick_params(axis='both', labelsize=8)
 
     def _draw_delta_l_diagram(self, ax, solver):
         """Рисование эпюры удлинений Δl(x)"""
@@ -484,25 +482,26 @@ class PlotCanvas(FigureCanvas):
             ax.axvline(x=r.x0, color='gray', linestyle='--', alpha=0.5)
 
         ax.set_xlim(-0.05, p.L + 0.05)
-        ax.set_xlabel('x, м', fontsize=10)
-        ax.set_ylabel('Δl, мм', fontsize=10)
-        ax.set_title('Эпюра Δl(x)', fontsize=11)
+        ax.set_xlabel('x, м', fontsize=9)
+        ax.set_ylabel('Δl, мм', fontsize=9)
+        ax.set_title('Эпюра Δl(x)', fontsize=10, pad=2)
         ax.grid(True, alpha=0.3)
+        ax.tick_params(axis='both', labelsize=8)
 
     def _draw_task3_info(self, ax, p, r):
         """Информационная панель для задачи 3"""
         ax.axis('off')
 
-        x0_str = f"{r.x0:.3f} м" if r.x0 is not None else "нет"
+        x0_str = f"{r.x0:.3f}м" if r.x0 is not None else "нет"
 
         info_text = (
-            f"L = {p.L:.2f} м,  E = {p.E} ГПа,  "
-            f"$F_1$ = {p.F1} кН (→),  $F_2$ = {p.F2} кН (←),  $F_3$ = {p.F3} кН (→)\n"
-            f"$R_A$ = {r.RA:.1f} кН,  Δl(L) = {r.delta_l_total:.4f} мм,  $x_0$ = {x0_str}"
+            f"L={p.L:.2f}м, E={p.E}ГПа, "
+            f"$F_1$={p.F1}кН(→), $F_2$={p.F2}кН(←), $F_3$={p.F3}кН(→)  |  "
+            f"$R_A$={r.RA:.1f}кН, Δl={r.delta_l_total:.4f}мм, $x_0$={x0_str}"
         )
 
         ax.text(0.5, 0.5, info_text, transform=ax.transAxes,
-                fontsize=10, ha='center', va='center',
+                fontsize=8, ha='center', va='center',
                 bbox=dict(boxstyle='round', facecolor='lightyellow', alpha=0.8))
 
 
