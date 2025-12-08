@@ -70,39 +70,39 @@ class PlotCanvas(FigureCanvas):
                     arrowprops=dict(arrowstyle='->', color='black', lw=1.5))
         ax.text(L * 1.09, 0, 'x', fontsize=10, va='center')
 
-        # Опора A (шарнирно-неподвижная)
+        # Опора A (шарнирно-неподвижная) - clip_on=False чтобы не обрезалось
         triangle_h = 0.12
         triangle_w = L * 0.06
         triangle = Polygon([
             (0, -beam_height/2),
             (-triangle_w/2, -beam_height/2 - triangle_h),
             (triangle_w/2, -beam_height/2 - triangle_h)
-        ], facecolor='lightgray', edgecolor='black', linewidth=1.5)
+        ], facecolor='lightgray', edgecolor='black', linewidth=1.5, clip_on=False)
         ax.add_patch(triangle)
         # Штриховка
         ground_y = -beam_height/2 - triangle_h
-        ax.plot([-triangle_w/2 - L*0.01, triangle_w/2 + L*0.01], [ground_y, ground_y], 'k-', linewidth=1.5)
+        ax.plot([-triangle_w/2 - L*0.01, triangle_w/2 + L*0.01], [ground_y, ground_y], 'k-', linewidth=1.5, clip_on=False)
         for i in range(5):
             x_start = -triangle_w/2 + i * triangle_w / 4
-            ax.plot([x_start, x_start - L*0.015], [ground_y, ground_y - 0.04], 'k-', linewidth=1)
-        ax.text(0, ground_y - 0.08, 'A', fontsize=10, ha='center', fontweight='bold')
+            ax.plot([x_start, x_start - L*0.015], [ground_y, ground_y - 0.04], 'k-', linewidth=1, clip_on=False)
+        ax.text(0, ground_y - 0.08, 'A', fontsize=10, ha='center', fontweight='bold', clip_on=False)
 
-        # Опора B (шарнирно-подвижная)
+        # Опора B (шарнирно-подвижная) - clip_on=False чтобы не обрезалось
         triangle_B = Polygon([
             (L, -beam_height/2),
             (L - triangle_w/2, -beam_height/2 - triangle_h),
             (L + triangle_w/2, -beam_height/2 - triangle_h)
-        ], facecolor='lightgray', edgecolor='black', linewidth=1.5)
+        ], facecolor='lightgray', edgecolor='black', linewidth=1.5, clip_on=False)
         ax.add_patch(triangle_B)
         # Ролики
         roller_y = -beam_height/2 - triangle_h - 0.025
         for dx in [-L*0.015, 0, L*0.015]:
             circle = plt.Circle((L + dx, roller_y), L*0.008,
-                                 facecolor='white', edgecolor='black', linewidth=1)
+                                 facecolor='white', edgecolor='black', linewidth=1, clip_on=False)
             ax.add_patch(circle)
         ax.plot([L - triangle_w/2 - L*0.01, L + triangle_w/2 + L*0.01],
-                [roller_y - 0.02, roller_y - 0.02], 'k-', linewidth=1.5)
-        ax.text(L, roller_y - 0.07, 'B', fontsize=10, ha='center', fontweight='bold')
+                [roller_y - 0.02, roller_y - 0.02], 'k-', linewidth=1.5, clip_on=False)
+        ax.text(L, roller_y - 0.07, 'B', fontsize=10, ha='center', fontweight='bold', clip_on=False)
 
         # Распределённая нагрузка q
         q_y_top = beam_height/2 + 0.18
@@ -149,8 +149,10 @@ class PlotCanvas(FigureCanvas):
         # Пунктир от силы F вниз (граница участков) - будет продолжен на эпюрах
         ax.axvline(x=a, color='gray', linestyle='--', alpha=0.7, linewidth=1)
 
-        # xlim ТАКОЙ ЖЕ как у эпюр для единых пунктирных линий
-        ax.set_xlim(xlim)
+        # xlim РАСШИРЕННЫЙ для схемы, чтобы опоры были полностью видны
+        # Опоры выступают за границы 0 и L, нужно добавить отступы
+        support_margin = L * 0.08  # Отступ для опор
+        ax.set_xlim(-support_margin, L + support_margin)
         ax.set_ylim(-0.65, 0.75)  # Расширим, чтобы опоры были полностью видны
         ax.axis('off')
         ax.set_title(f'Задача 2. Вариант {p.N}', fontsize=13, fontweight='bold', pad=3)
@@ -161,13 +163,14 @@ class PlotCanvas(FigureCanvas):
 
         # Данные для двух участков ОТДЕЛЬНО (без соединения - разрыв первого рода)
         n_points = 100
+        eps = 1e-6  # Малый зазор чтобы участки НЕ соединялись в точке разрыва
 
-        # Участок 1: от 0 до a
-        x1 = np.linspace(0, p.a, n_points)
+        # Участок 1: от 0 до a (НЕ включая a - останавливаемся чуть раньше)
+        x1 = np.linspace(0, p.a - eps, n_points)
         Q1 = np.array([solver.Q(x) for x in x1])
 
-        # Участок 2: от a до L
-        x2 = np.linspace(p.a, p.L, n_points)
+        # Участок 2: от a до L (НЕ включая a - начинаем чуть позже)
+        x2 = np.linspace(p.a + eps, p.L, n_points)
         Q2 = np.array([solver.Q(x) for x in x2])
 
         # Базовая линия
@@ -176,17 +179,18 @@ class PlotCanvas(FigureCanvas):
         # Эпюра участок 1 (заливка и линия)
         ax.fill_between(x1, 0, Q1, alpha=0.3, color='blue')
         ax.plot(x1, Q1, 'b-', linewidth=2)
-        # Замыкающая вертикальная линия только слева (в точке разрыва НЕ соединяем)
-        ax.plot([0, 0], [0, Q1[0]], 'b-', linewidth=2)
+        # Замыкающие вертикальные линии для участка 1
+        ax.plot([0, 0], [0, Q1[0]], 'b-', linewidth=2)  # Слева
+        ax.plot([x1[-1], x1[-1]], [0, Q1[-1]], 'b-', linewidth=2)  # Справа (до точки разрыва)
 
         # Эпюра участок 2 (заливка и линия)
         ax.fill_between(x2, 0, Q2, alpha=0.3, color='blue')
         ax.plot(x2, Q2, 'b-', linewidth=2)
-        # Замыкающая вертикальная линия только справа (в точке разрыва НЕ соединяем)
-        ax.plot([p.L, p.L], [0, Q2[-1]], 'b-', linewidth=2)
+        # Замыкающие вертикальные линии для участка 2
+        ax.plot([x2[0], x2[0]], [0, Q2[0]], 'b-', linewidth=2)  # Слева (от точки разрыва)
+        ax.plot([p.L, p.L], [0, Q2[-1]], 'b-', linewidth=2)  # Справа
 
-        # РАЗРЫВ ПЕРВОГО РОДА: в точке a пунктирная линия проходит через весь разрыв
-        # Вертикальные линии НЕ рисуем - это неустранимый разрыв
+        # РАЗРЫВ ПЕРВОГО РОДА: участки НЕ соединены - между ними визуальный разрыв
 
         # Подписи значений
         Q_at_0 = solver.Q(0)
@@ -214,10 +218,16 @@ class PlotCanvas(FigureCanvas):
             if abs(Q) > 0.1:
                 ax.plot([x, x], [0, Q], 'b-', alpha=0.3, linewidth=0.5)
 
-        # Знаки в ЦЕНТРЕ каждой области (всегда показываем)
-        # Область 1: от 0 до a
-        center_x1 = p.a / 2
-        center_y1 = (Q_at_0 + Q_at_a_left) / 4  # Центр по высоте
+        # Знаки в ЦЕНТРОИДЕ каждой области
+        # Область 1: от 0 до a (трапеция или треугольник)
+        # Для линейной функции Q(x) центроид x ближе к стороне с большим значением
+        if abs(Q_at_0) > abs(Q_at_a_left):
+            # Центроид ближе к x=0
+            center_x1 = p.a / 3
+        else:
+            # Центроид ближе к x=a
+            center_x1 = 2 * p.a / 3
+        center_y1 = (Q_at_0 + Q_at_a_left) / 3  # Центроид по высоте для треугольника
         if Q_at_0 > 0 or Q_at_a_left > 0:
             ax.text(center_x1, center_y1, '+', fontsize=16, ha='center', va='center',
                     fontweight='bold', color='blue', alpha=0.8)
@@ -225,9 +235,16 @@ class PlotCanvas(FigureCanvas):
             ax.text(center_x1, center_y1, '−', fontsize=16, ha='center', va='center',
                     fontweight='bold', color='blue', alpha=0.8)
 
-        # Область 2: от a до L
-        center_x2 = (p.a + p.L) / 2
-        center_y2 = (Q_at_a_right + Q_at_L) / 4  # Центр по высоте
+        # Область 2: от a до L (треугольник когда Q_at_L = 0)
+        # Центроид треугольника с вершинами (a,0), (a,Q_at_a_right), (L,0):
+        # x_c = (a + a + L) / 3 = (2a + L) / 3
+        # y_c = (0 + Q_at_a_right + 0) / 3 = Q_at_a_right / 3
+        if abs(Q_at_L) < 0.01:  # Треугольник (Q_at_L ≈ 0)
+            center_x2 = (2 * p.a + p.L) / 3
+            center_y2 = Q_at_a_right / 3
+        else:  # Трапеция
+            center_x2 = (p.a + p.L) / 2
+            center_y2 = (Q_at_a_right + Q_at_L) / 3
         if Q_at_a_right > 0 or Q_at_L > 0:
             ax.text(center_x2, center_y2, '+', fontsize=16, ha='center', va='center',
                     fontweight='bold', color='blue', alpha=0.8)
