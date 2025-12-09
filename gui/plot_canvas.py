@@ -214,20 +214,50 @@ class PlotCanvas(FigureCanvas):
 
         # РАЗРЫВ ПЕРВОГО РОДА: участки НЕ соединены - между ними только пунктир
 
-        # Подписи значений
+        # Подписи значений - умное позиционирование вне эпюры
         Q_at_0 = solver.Q(0)
         Q_at_a_left = solver.Q(p.a - 1e-9)
         Q_at_a_right = solver.Q(p.a + 1e-9)
         Q_at_L = solver.Q(p.L)
 
-        ax.text(0.05, Q_at_0, f'{Q_at_0:.2f}', fontsize=9, color='blue', ha='left',
-                va='bottom' if Q_at_0 >= 0 else 'top')
-        ax.text(p.a - 0.05, Q_at_a_left, f'{Q_at_a_left:.2f}', fontsize=9, color='blue', ha='right',
-                va='bottom' if Q_at_a_left >= 0 else 'top')
-        ax.text(p.a + 0.05, Q_at_a_right, f'{Q_at_a_right:.2f}', fontsize=9, color='blue', ha='left',
-                va='bottom' if Q_at_a_right >= 0 else 'top')
-        ax.text(p.L, Q_at_L, f'{Q_at_L:.2f}', fontsize=9, color='blue', ha='center',
-                va='bottom' if Q_at_L >= 0 else 'top')
+        # Вычисляем отступ для подписей (выносим за пределы эпюры)
+        Q_range = max(max(Q1), max(Q2)) - min(min(Q1), min(Q2))
+        label_offset = max(Q_range * 0.15, 3.0)  # Минимум 3 кН отступ
+
+        # Стиль фона для читаемости
+        bbox_style = dict(boxstyle='round,pad=0.15', facecolor='white', edgecolor='none', alpha=0.9)
+
+        # Функция для определения позиции подписи (выносим за эпюру)
+        def get_label_y(Q_val, offset):
+            if Q_val >= 0:
+                return Q_val + offset, 'bottom'
+            else:
+                return Q_val - offset, 'top'
+
+        # Подпись в x=0
+        y_pos, va = get_label_y(Q_at_0, label_offset)
+        ax.text(p.L * 0.02, y_pos, f'{Q_at_0:.2f}', fontsize=9, color='blue', ha='left', va=va, bbox=bbox_style)
+
+        # Подписи у точки разрыва (x=a) - проверка на перекрытие
+        y_left, va_left = get_label_y(Q_at_a_left, label_offset)
+        y_right, va_right = get_label_y(Q_at_a_right, label_offset)
+
+        # Если подписи слишком близко по вертикали, раздвигаем их
+        if abs(y_left - y_right) < label_offset * 1.2:
+            # Верхнюю поднимаем выше, нижнюю опускаем ниже
+            if y_left >= y_right:
+                y_left += label_offset * 0.6
+                y_right -= label_offset * 0.6
+            else:
+                y_right += label_offset * 0.6
+                y_left -= label_offset * 0.6
+
+        ax.text(p.a - p.L * 0.02, y_left, f'{Q_at_a_left:.2f}', fontsize=9, color='blue', ha='right', va=va_left, bbox=bbox_style)
+        ax.text(p.a + p.L * 0.02, y_right, f'{Q_at_a_right:.2f}', fontsize=9, color='blue', ha='left', va=va_right, bbox=bbox_style)
+
+        # Подпись в x=L
+        y_pos, va = get_label_y(Q_at_L, label_offset)
+        ax.text(p.L - p.L * 0.02, y_pos, f'{Q_at_L:.2f}', fontsize=9, color='blue', ha='right', va=va, bbox=bbox_style)
 
         # Штриховка
         n_lines = 25
@@ -300,9 +330,10 @@ class PlotCanvas(FigureCanvas):
 
         Q_max = max(max(Q1), max(Q2))
         Q_min = min(min(Q1), min(Q2))
-        y_margin = max(abs(Q_max), abs(Q_min)) * 0.2
+        # Увеличиваем отступы для подписей, которые теперь вынесены за эпюру
+        y_margin = max(abs(Q_max), abs(Q_min)) * 0.25 + label_offset
         ax.set_xlim(xlim)
-        ax.set_ylim(Q_min - y_margin - 3, Q_max + y_margin + 3)
+        ax.set_ylim(Q_min - y_margin, Q_max + y_margin)
 
         ax.set_ylabel('Q, кН', fontsize=10)
         ax.set_title('Эпюра Q(x)', fontsize=11, pad=3)
