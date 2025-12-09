@@ -54,15 +54,39 @@ class PlotCanvas(FigureCanvas):
 
         self.fig.tight_layout()
 
-        # Соединяющий пунктир от Q=0 до M_max (между эпюрами)
+        # Сквозные пунктирные линии через все графики
+        from matplotlib.patches import ConnectionPatch
+        axes = [ax_scheme, ax_Q, ax_M]
+
+        # Функция для рисования сквозного пунктира
+        def draw_through_line(x_pos):
+            # Линии внутри каждого графика
+            for ax in axes:
+                ax.axvline(x=x_pos, color='gray', linestyle='--', alpha=0.7, linewidth=1)
+            # Соединения между графиками
+            for i in range(len(axes) - 1):
+                ax_top, ax_bottom = axes[i], axes[i + 1]
+                y_top_min = ax_top.get_ylim()[0]
+                y_bottom_max = ax_bottom.get_ylim()[1]
+                con = ConnectionPatch(
+                    xyA=(x_pos, y_top_min), coordsA=ax_top.transData,
+                    xyB=(x_pos, y_bottom_max), coordsB=ax_bottom.transData,
+                    color='gray', linestyle='--', alpha=0.7, linewidth=1
+                )
+                self.fig.add_artist(con)
+
+        # Пунктир на x=0 (левая граница)
+        draw_through_line(0)
+        # Пунктир на x=a (точка приложения силы)
+        draw_through_line(p.a)
+        # Пунктир на x=L (правая граница)
+        draw_through_line(p.L)
+
+        # Соединяющий пунктир от Q=0 до M_max (если Q пересекает ноль)
         Q_at_a_right = solver.Q(p.a + 1e-9)
         Q_at_L = solver.Q(p.L)
         if Q_at_a_right * Q_at_L < 0 and p.a < r.x_max < p.L - 0.01:
             x_zero = p.a + (0 - Q_at_a_right) * (p.L - p.a) / (Q_at_L - Q_at_a_right)
-            # Преобразуем координаты данных в координаты фигуры
-            from matplotlib.patches import ConnectionPatch
-            # Точка на Q: (x_zero, 0)
-            # Точка на M: (x_zero, M_max)
             con = ConnectionPatch(
                 xyA=(x_zero, 0), coordsA=ax_Q.transData,
                 xyB=(x_zero, r.M_max), coordsB=ax_M.transData,
@@ -169,8 +193,7 @@ class PlotCanvas(FigureCanvas):
                     arrowprops=dict(arrowstyle='<->', color='dimgray', lw=1))
         ax.text(L/2, y_dim_L + 0.04, f'L = {L:.2f} м', fontsize=8, ha='center', color='dimgray')
 
-        # Пунктир от силы F вниз (граница участков) - будет продолжен на эпюрах
-        ax.axvline(x=a, color='gray', linestyle='--', alpha=0.7, linewidth=1)
+        # Пунктиры границ рисуются как сквозные линии в plot_task2
 
         # xlim ТАКОЙ ЖЕ как у эпюр для единых пунктирных линий
         # Опоры рисуются с clip_on=False, так что они будут видны
@@ -224,9 +247,6 @@ class PlotCanvas(FigureCanvas):
         Q_range = max(max(Q1), max(Q2)) - min(min(Q1), min(Q2))
         label_offset = max(Q_range * 0.15, 3.0)  # Минимум 3 кН отступ
 
-        # Стиль фона для читаемости
-        bbox_style = dict(boxstyle='round,pad=0.15', facecolor='white', edgecolor='none', alpha=0.9)
-
         # Функция для определения позиции подписи (выносим за эпюру)
         def get_label_y(Q_val, offset):
             if Q_val >= 0:
@@ -236,7 +256,7 @@ class PlotCanvas(FigureCanvas):
 
         # Подпись в x=0
         y_pos, va = get_label_y(Q_at_0, label_offset)
-        ax.text(p.L * 0.02, y_pos, f'{Q_at_0:.2f}', fontsize=9, color='blue', ha='left', va=va, bbox=bbox_style)
+        ax.text(p.L * 0.02, y_pos, f'{Q_at_0:.2f}', fontsize=9, color='blue', ha='left', va=va)
 
         # Подписи у точки разрыва (x=a) - проверка на перекрытие
         y_left, va_left = get_label_y(Q_at_a_left, label_offset)
@@ -252,12 +272,12 @@ class PlotCanvas(FigureCanvas):
                 y_right += label_offset * 0.6
                 y_left -= label_offset * 0.6
 
-        ax.text(p.a - p.L * 0.02, y_left, f'{Q_at_a_left:.2f}', fontsize=9, color='blue', ha='right', va=va_left, bbox=bbox_style)
-        ax.text(p.a + p.L * 0.02, y_right, f'{Q_at_a_right:.2f}', fontsize=9, color='blue', ha='left', va=va_right, bbox=bbox_style)
+        ax.text(p.a - p.L * 0.02, y_left, f'{Q_at_a_left:.2f}', fontsize=9, color='blue', ha='right', va=va_left)
+        ax.text(p.a + p.L * 0.02, y_right, f'{Q_at_a_right:.2f}', fontsize=9, color='blue', ha='left', va=va_right)
 
         # Подпись в x=L
         y_pos, va = get_label_y(Q_at_L, label_offset)
-        ax.text(p.L - p.L * 0.02, y_pos, f'{Q_at_L:.2f}', fontsize=9, color='blue', ha='right', va=va, bbox=bbox_style)
+        ax.text(p.L - p.L * 0.02, y_pos, f'{Q_at_L:.2f}', fontsize=9, color='blue', ha='right', va=va)
 
         # Штриховка
         n_lines = 25
@@ -325,8 +345,7 @@ class PlotCanvas(FigureCanvas):
                     ax.text(center_x2, center_y2, '−', fontsize=16, ha='center', va='center',
                             fontweight='bold', color='blue', alpha=0.8)
 
-        # Пунктир границы участков
-        ax.axvline(x=p.a, color='gray', linestyle='--', alpha=0.7, linewidth=1)
+        # Пунктиры рисуются как сквозные линии в plot_task2
 
         Q_max = max(max(Q1), max(Q2))
         Q_min = min(min(Q1), min(Q2))
@@ -387,9 +406,7 @@ class PlotCanvas(FigureCanvas):
             ax.text(p.L / 2, M_max / 2, '+', fontsize=14, ha='center', va='center',
                     fontweight='bold', color='red', alpha=0.7)
 
-        # Пунктир границы участков
-        ax.axvline(x=p.a, color='gray', linestyle='--', alpha=0.7, linewidth=1)
-        # Соединяющий пунктир Q=0 -> M_max рисуется в plot_task2
+        # Пунктиры рисуются как сквозные линии в plot_task2
 
         M_min = min(M_data)
         y_margin = max(abs(M_max), abs(M_min)) * 0.2 if M_max != 0 else 5
@@ -435,6 +452,37 @@ class PlotCanvas(FigureCanvas):
         # tight_layout с отступами для векторов RA (слева) и F3 (справа)
         # Увеличиваем отступы для надёжного отображения стрелок
         self.fig.tight_layout(rect=[0.1, 0, 0.92, 1])
+
+        # Сквозные пунктирные линии через все графики
+        from matplotlib.patches import ConnectionPatch
+        axes = [ax_scheme, ax_N, ax_sigma, ax_dl]
+
+        # Функция для рисования сквозного пунктира
+        def draw_through_line(x_pos):
+            # Линии внутри каждого графика
+            for ax in axes:
+                ax.axvline(x=x_pos, color='gray', linestyle='--', alpha=0.7, linewidth=1)
+            # Соединения между графиками
+            for i in range(len(axes) - 1):
+                ax_top, ax_bottom = axes[i], axes[i + 1]
+                y_top_min = ax_top.get_ylim()[0]
+                y_bottom_max = ax_bottom.get_ylim()[1]
+                con = ConnectionPatch(
+                    xyA=(x_pos, y_top_min), coordsA=ax_top.transData,
+                    xyB=(x_pos, y_bottom_max), coordsB=ax_bottom.transData,
+                    color='gray', linestyle='--', alpha=0.7, linewidth=1
+                )
+                self.fig.add_artist(con)
+
+        # Пунктир на x=0 (левая граница)
+        draw_through_line(0)
+        # Пунктир на x=L1 (граница 1-2 участков)
+        draw_through_line(p.L1)
+        # Пунктир на x=L1+L2 (граница 2-3 участков)
+        draw_through_line(p.L1 + p.L2)
+        # Пунктир на x=L (правая граница)
+        draw_through_line(p.L)
+
         self.draw()
 
     def _draw_rod_scheme(self, ax, p, r, xlim):
@@ -515,9 +563,7 @@ class PlotCanvas(FigureCanvas):
         ax.text(L1 + L2/2, y_len, f'$L_2$={L2:.2f}', fontsize=7, ha='center', color='gray')
         ax.text(L1 + L2 + L3/2, y_len, f'$L_3$={L3:.2f}', fontsize=7, ha='center', color='gray')
 
-        # Пунктиры границ участков - единые с эпюрами
-        ax.axvline(x=L1, color='gray', linestyle='--', alpha=0.7, linewidth=1)
-        ax.axvline(x=L1 + L2, color='gray', linestyle='--', alpha=0.7, linewidth=1)
+        # Пунктиры рисуются как сквозные линии в plot_task3
 
         # xlim передается из plot_task3, расширенный для показа RA и F3
         ax.set_xlim(xlim)
@@ -560,9 +606,7 @@ class PlotCanvas(FigureCanvas):
         if abs(r.N3) > 0.5:
             ax.text(p.L1 + p.L2 + p.L3/2, r.N3/2, '+' if r.N3 > 0 else '−', fontsize=12, ha='center', va='center')
 
-        # Пунктиры границ
-        ax.axvline(x=p.L1, color='gray', linestyle='--', alpha=0.7, linewidth=1)
-        ax.axvline(x=p.L1 + p.L2, color='gray', linestyle='--', alpha=0.7, linewidth=1)
+        # Пунктиры рисуются как сквозные линии в plot_task3
 
         ax.set_xlim(xlim)
         ax.set_ylabel('N, кН', fontsize=9)
@@ -608,9 +652,7 @@ class PlotCanvas(FigureCanvas):
             ax.text(p.L1 + p.L2 + p.L3/2, r.sigma3/2, '+' if r.sigma3 > 0 else '−', fontsize=12, ha='center', va='center',
                     fontweight='bold', color='green', alpha=0.7)
 
-        # Пунктиры границ
-        ax.axvline(x=p.L1, color='gray', linestyle='--', alpha=0.7, linewidth=1)
-        ax.axvline(x=p.L1 + p.L2, color='gray', linestyle='--', alpha=0.7, linewidth=1)
+        # Пунктиры рисуются как сквозные линии в plot_task3
 
         ax.set_xlim(xlim)
         ax.set_ylabel('σ, МПа', fontsize=9)
@@ -672,9 +714,7 @@ class PlotCanvas(FigureCanvas):
                     ax.text((r.x0 + p.L) / 2, dl_max / 2, '+', fontsize=14, ha='center', va='center',
                             fontweight='bold', color='purple', alpha=0.7)
 
-        # Пунктиры границ участков
-        ax.axvline(x=p.L1, color='gray', linestyle='--', alpha=0.7, linewidth=1)
-        ax.axvline(x=p.L1 + p.L2, color='gray', linestyle='--', alpha=0.7, linewidth=1)
+        # Пунктиры рисуются как сквозные линии в plot_task3
 
         ax.set_xlim(xlim)
         ax.set_xlabel('x, м', fontsize=9)
