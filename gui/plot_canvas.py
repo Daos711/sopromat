@@ -149,13 +149,12 @@ class PlotCanvas(FigureCanvas):
         # Пунктир от силы F вниз (граница участков) - будет продолжен на эпюрах
         ax.axvline(x=a, color='gray', linestyle='--', alpha=0.7, linewidth=1)
 
-        # xlim РАСШИРЕННЫЙ для схемы, чтобы опоры были полностью видны
-        # Опоры выступают за границы 0 и L, нужно добавить отступы
-        support_margin = L * 0.08  # Отступ для опор
-        ax.set_xlim(-support_margin, L + support_margin)
+        # xlim ТАКОЙ ЖЕ как у эпюр для единых пунктирных линий
+        # Опоры рисуются с clip_on=False, так что они будут видны
+        ax.set_xlim(xlim)
         ax.set_ylim(-0.65, 0.75)  # Расширим, чтобы опоры были полностью видны
         ax.axis('off')
-        ax.set_title(f'Задача 2. Вариант {p.N}', fontsize=13, fontweight='bold', pad=3)
+        ax.set_title(f'Задача 2. Вариант {p.N}', fontsize=13, fontweight='bold', pad=15)
 
     def _draw_Q_diagram(self, ax, solver, xlim):
         """Рисование эпюры поперечных сил Q(x)"""
@@ -218,22 +217,22 @@ class PlotCanvas(FigureCanvas):
             if abs(Q) > 0.1:
                 ax.plot([x, x], [0, Q], 'b-', alpha=0.3, linewidth=0.5)
 
-        # Знаки в ЦЕНТРОИДЕ каждой области
-        # Область 1: от 0 до a (трапеция или треугольник)
-        # Для линейной функции Q(x) центроид x ближе к стороне с большим значением
-        if abs(Q_at_0) > abs(Q_at_a_left):
-            # Центроид ближе к x=0
-            center_x1 = p.a / 3
-        else:
-            # Центроид ближе к x=a
-            center_x1 = 2 * p.a / 3
-        center_y1 = (Q_at_0 + Q_at_a_left) / 3  # Центроид по высоте для треугольника
-        if Q_at_0 > 0 or Q_at_a_left > 0:
-            ax.text(center_x1, center_y1, '+', fontsize=16, ha='center', va='center',
-                    fontweight='bold', color='blue', alpha=0.8)
-        elif Q_at_0 < 0 or Q_at_a_left < 0:
-            ax.text(center_x1, center_y1, '−', fontsize=16, ha='center', va='center',
-                    fontweight='bold', color='blue', alpha=0.8)
+        # Знаки в ЦЕНТРЕ каждой области
+        # Минимальная ширина области для показа знака (в долях от L)
+        min_width_for_sign = p.L * 0.08
+
+        # Область 1: от 0 до a (трапеция)
+        # Центр трапеции по x - середина участка
+        center_x1 = p.a / 2
+        # Центр по y - среднее значение
+        center_y1 = (Q_at_0 + Q_at_a_left) / 2 * 0.5
+        if p.a > min_width_for_sign:  # Область достаточно широкая
+            if Q_at_0 > 0 and Q_at_a_left > 0:
+                ax.text(center_x1, center_y1, '+', fontsize=16, ha='center', va='center',
+                        fontweight='bold', color='blue', alpha=0.8)
+            elif Q_at_0 < 0 and Q_at_a_left < 0:
+                ax.text(center_x1, center_y1, '−', fontsize=16, ha='center', va='center',
+                        fontweight='bold', color='blue', alpha=0.8)
 
         # Область 2: от a до L
         # Проверяем, пересекает ли Q(x) ноль на этом участке
@@ -241,43 +240,49 @@ class PlotCanvas(FigureCanvas):
             # Находим точку пересечения с нулём (линейная интерполяция)
             x_zero = p.a + (0 - Q_at_a_right) * (p.L - p.a) / (Q_at_L - Q_at_a_right)
 
-            # Знак + в положительной части (где Q > 0)
+            # Положительная часть
             if Q_at_a_right > 0:
-                # Положительная часть от a до x_zero (треугольник)
-                center_x_pos = (2 * p.a + x_zero) / 3
-                center_y_pos = Q_at_a_right / 3
+                pos_width = x_zero - p.a
+                neg_width = p.L - x_zero
+            else:
+                pos_width = p.L - x_zero
+                neg_width = x_zero - p.a
+
+            # Знак + в положительной части (только если область достаточно большая)
+            if Q_at_a_right > 0 and pos_width > min_width_for_sign:
+                center_x_pos = (p.a + x_zero) / 2
+                center_y_pos = Q_at_a_right / 2 * 0.5
                 ax.text(center_x_pos, center_y_pos, '+', fontsize=16, ha='center', va='center',
                         fontweight='bold', color='blue', alpha=0.8)
-                # Отрицательная часть от x_zero до L (треугольник)
-                center_x_neg = (2 * x_zero + p.L) / 3
-                center_y_neg = Q_at_L / 3
+            elif Q_at_a_right < 0 and neg_width > min_width_for_sign:
+                center_x_neg = (p.a + x_zero) / 2
+                center_y_neg = Q_at_a_right / 2 * 0.5
                 ax.text(center_x_neg, center_y_neg, '−', fontsize=16, ha='center', va='center',
                         fontweight='bold', color='blue', alpha=0.8)
-            else:
-                # Отрицательная часть от a до x_zero
-                center_x_neg = (2 * p.a + x_zero) / 3
-                center_y_neg = Q_at_a_right / 3
+
+            # Знак − в отрицательной части (только если область достаточно большая)
+            if Q_at_L < 0 and neg_width > min_width_for_sign:
+                center_x_neg = (x_zero + p.L) / 2
+                center_y_neg = Q_at_L / 2 * 0.5
                 ax.text(center_x_neg, center_y_neg, '−', fontsize=16, ha='center', va='center',
                         fontweight='bold', color='blue', alpha=0.8)
-                # Положительная часть от x_zero до L
-                center_x_pos = (2 * x_zero + p.L) / 3
-                center_y_pos = Q_at_L / 3
+            elif Q_at_L > 0 and pos_width > min_width_for_sign:
+                center_x_pos = (x_zero + p.L) / 2
+                center_y_pos = Q_at_L / 2 * 0.5
                 ax.text(center_x_pos, center_y_pos, '+', fontsize=16, ha='center', va='center',
                         fontweight='bold', color='blue', alpha=0.8)
         else:
             # Q не меняет знак - один знак для всей области
-            if abs(Q_at_L) < 0.01:  # Треугольник (Q_at_L ≈ 0)
-                center_x2 = (2 * p.a + p.L) / 3
-                center_y2 = Q_at_a_right / 3
-            else:  # Трапеция
+            width2 = p.L - p.a
+            if width2 > min_width_for_sign:
                 center_x2 = (p.a + p.L) / 2
-                center_y2 = (Q_at_a_right + Q_at_L) / 3
-            if Q_at_a_right > 0 or Q_at_L > 0:
-                ax.text(center_x2, center_y2, '+', fontsize=16, ha='center', va='center',
-                        fontweight='bold', color='blue', alpha=0.8)
-            elif Q_at_a_right < 0 or Q_at_L < 0:
-                ax.text(center_x2, center_y2, '−', fontsize=16, ha='center', va='center',
-                        fontweight='bold', color='blue', alpha=0.8)
+                center_y2 = (Q_at_a_right + Q_at_L) / 2 * 0.5
+                if Q_at_a_right > 0 or Q_at_L > 0:
+                    ax.text(center_x2, center_y2, '+', fontsize=16, ha='center', va='center',
+                            fontweight='bold', color='blue', alpha=0.8)
+                elif Q_at_a_right < 0 or Q_at_L < 0:
+                    ax.text(center_x2, center_y2, '−', fontsize=16, ha='center', va='center',
+                            fontweight='bold', color='blue', alpha=0.8)
 
         # Пунктир границы участков
         ax.axvline(x=p.a, color='gray', linestyle='--', alpha=0.7, linewidth=1)
@@ -313,11 +318,18 @@ class PlotCanvas(FigureCanvas):
 
         # Точка максимума
         ax.plot(r.x_max, r.M_max, 'ro', markersize=6)
-        ax.text(r.x_max, r.M_max + 2, f'{r.M_max:.2f}', fontsize=9, color='red', ha='center')
+        ax.text(r.x_max + p.L * 0.03, r.M_max + 2, f'{r.M_max:.2f}', fontsize=9, color='red', ha='left')
 
-        # Значение в точке a
+        # Значение в точке a (сдвигаем влево чтобы не налезало на максимум)
         M_a = solver.M(p.a)
-        ax.text(p.a, M_a, f'{M_a:.2f}', fontsize=9, color='red', ha='center',
+        # Если точка a близка к максимуму, сдвигаем подпись влево
+        if abs(p.a - r.x_max) < p.L * 0.1:
+            ha_align = 'right'
+            x_offset = -p.L * 0.02
+        else:
+            ha_align = 'center'
+            x_offset = 0
+        ax.text(p.a + x_offset, M_a, f'{M_a:.2f}', fontsize=9, color='red', ha=ha_align,
                 va='bottom' if M_a >= 0 else 'top')
 
         # Штриховка
@@ -430,11 +442,10 @@ class PlotCanvas(FigureCanvas):
                     arrowprops=dict(arrowstyle='->', color='red', lw=2.5))
         ax.text(L1 + L2 - arrow_len/2, max_h/2 + 0.12, f'$F_2$={p.F2}', fontsize=9, ha='center', color='red')
 
-        # F3 вправо - от правой границы 3-го участка (x=L) вправо
-        # Вектор внутри видимой области, подпись справа
-        ax.annotate('', xy=(L - arrow_len*0.1, 0), xytext=(L - arrow_len, 0),
+        # F3 вправо - НАЧИНАЕТСЯ на правой границе 3-го участка (x=L) и идёт ВПРАВО
+        ax.annotate('', xy=(L + arrow_len, 0), xytext=(L, 0),
                     arrowprops=dict(arrowstyle='->', color='blue', lw=2.5), clip_on=False)
-        ax.text(L, max_h/2 + 0.12, f'$F_3$={p.F3}', fontsize=9, ha='center', color='blue')
+        ax.text(L + arrow_len + L*0.02, 0, f'$F_3$={p.F3}', fontsize=9, ha='left', va='center', color='blue')
 
         # Реакция RA - ОТ ЦЕНТРА ЗАДЕЛКИ ВЛЕВО (показываем модуль)
         ra_arrow_len = L * 0.1
@@ -465,7 +476,7 @@ class PlotCanvas(FigureCanvas):
         ax.set_ylim(-max_h/2 - 0.35, max_h/2 + 0.5)
         # НЕ используем set_aspect - схема растягивается по ширине как эпюры
         ax.axis('off')
-        ax.set_title(f'Задача 3. Вариант {p.N}', fontsize=12, fontweight='bold', pad=3)
+        ax.set_title(f'Задача 3. Вариант {p.N}', fontsize=12, fontweight='bold', pad=15)
 
     def _draw_N_diagram(self, ax, solver, xlim):
         """Рисование эпюры продольных сил N(x)"""
