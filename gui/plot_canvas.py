@@ -594,12 +594,18 @@ class PlotCanvas(FigureCanvas):
         ax.plot([p.L, p.L], [0, r.N3], 'b-', linewidth=2)  # Вертикальная только на x=L
 
         # Подписи (абсолютные значения - минус не нужен, т.к. видно по положению)
-        ax.text(p.L1/2, r.N1, f'{abs(r.N1):.1f}', fontsize=9, color='blue', ha='center',
-                va='bottom' if r.N1 >= 0 else 'top')
-        ax.text(p.L1 + p.L2/2, r.N2, f'{abs(r.N2):.1f}', fontsize=9, color='blue', ha='center',
-                va='bottom' if r.N2 >= 0 else 'top')
-        ax.text(p.L1 + p.L2 + p.L3/2, r.N3, f'{abs(r.N3):.1f}', fontsize=9, color='blue', ha='center',
-                va='bottom' if r.N3 >= 0 else 'top')
+        # Для отрицательных - сдвигаем вправо чтобы не накладывались на ось
+        def label_x_offset(x_center, val, segment_width):
+            if val < 0:
+                return x_center + segment_width * 0.25  # Сдвиг вправо
+            return x_center
+
+        ax.text(label_x_offset(p.L1/2, r.N1, p.L1), r.N1, f'{abs(r.N1):.1f}', fontsize=9, color='blue',
+                ha='center', va='bottom' if r.N1 >= 0 else 'top')
+        ax.text(label_x_offset(p.L1 + p.L2/2, r.N2, p.L2), r.N2, f'{abs(r.N2):.1f}', fontsize=9, color='blue',
+                ha='center', va='bottom' if r.N2 >= 0 else 'top')
+        ax.text(label_x_offset(p.L1 + p.L2 + p.L3/2, r.N3, p.L3), r.N3, f'{abs(r.N3):.1f}', fontsize=9, color='blue',
+                ha='center', va='bottom' if r.N3 >= 0 else 'top')
 
         # Знаки
         if abs(r.N1) > 0.5:
@@ -640,12 +646,18 @@ class PlotCanvas(FigureCanvas):
         ax.plot([p.L, p.L], [0, r.sigma3], 'g-', linewidth=2)  # Вертикальная только на x=L
 
         # Подписи (абсолютные значения - минус не нужен, т.к. видно по положению)
-        ax.text(p.L1/2, r.sigma1, f'{abs(r.sigma1):.1f}', fontsize=9, color='green', ha='center',
-                va='bottom' if r.sigma1 >= 0 else 'top')
-        ax.text(p.L1 + p.L2/2, r.sigma2, f'{abs(r.sigma2):.1f}', fontsize=9, color='green', ha='center',
-                va='bottom' if r.sigma2 >= 0 else 'top')
-        ax.text(p.L1 + p.L2 + p.L3/2, r.sigma3, f'{abs(r.sigma3):.1f}', fontsize=9, color='green', ha='center',
-                va='bottom' if r.sigma3 >= 0 else 'top')
+        # Для отрицательных - сдвигаем вправо чтобы не накладывались на ось
+        def label_x_offset(x_center, val, segment_width):
+            if val < 0:
+                return x_center + segment_width * 0.25  # Сдвиг вправо
+            return x_center
+
+        ax.text(label_x_offset(p.L1/2, r.sigma1, p.L1), r.sigma1, f'{abs(r.sigma1):.1f}', fontsize=9, color='green',
+                ha='center', va='bottom' if r.sigma1 >= 0 else 'top')
+        ax.text(label_x_offset(p.L1 + p.L2/2, r.sigma2, p.L2), r.sigma2, f'{abs(r.sigma2):.1f}', fontsize=9, color='green',
+                ha='center', va='bottom' if r.sigma2 >= 0 else 'top')
+        ax.text(label_x_offset(p.L1 + p.L2 + p.L3/2, r.sigma3, p.L3), r.sigma3, f'{abs(r.sigma3):.1f}', fontsize=9, color='green',
+                ha='center', va='bottom' if r.sigma3 >= 0 else 'top')
 
         # Знаки
         if abs(r.sigma1) > 0.5:
