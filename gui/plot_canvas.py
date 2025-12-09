@@ -176,11 +176,15 @@ class PlotCanvas(FigureCanvas):
         # RA - от верхней части балки A вверх, ровно над x=0
         ax.annotate('', xy=(0, react_start + react_len), xytext=(0, react_start),
                     arrowprops=dict(arrowstyle='->', color='green', lw=2.5))
-        ax.text(0, react_start + react_len + 0.03, f'$R_A$={r.RA:.1f}', fontsize=9, color='green', ha='center', va='bottom')
+        ra_val = r.RA
+        ra_str = f'{ra_val:.0f}' if ra_val == int(ra_val) else f'{ra_val:.1f}'
+        ax.text(0, react_start + react_len + 0.03, f'$R_A$={ra_str}', fontsize=9, color='green', ha='center', va='bottom')
         # RB - от верхней части балки B вверх, ровно над x=L
         ax.annotate('', xy=(L, react_start + react_len), xytext=(L, react_start),
                     arrowprops=dict(arrowstyle='->', color='green', lw=2.5))
-        ax.text(L, react_start + react_len + 0.03, f'$R_B$={r.RB:.1f}', fontsize=9, color='green', ha='center', va='bottom')
+        rb_val = r.RB
+        rb_str = f'{rb_val:.0f}' if rb_val == int(rb_val) else f'{rb_val:.1f}'
+        ax.text(L, react_start + react_len + 0.03, f'$R_B$={rb_str}', fontsize=9, color='green', ha='center', va='bottom')
 
         # Размеры
         y_dim_a = ground_y - 0.12
@@ -542,7 +546,9 @@ class PlotCanvas(FigureCanvas):
                                    arrowstyle='->', mutation_scale=15,
                                    color='green', linewidth=3, clip_on=False)
         ax.add_patch(ra_arrow)
-        ax.text(-ra_arrow_len/2, max_h/2 + 0.12, f'$R_A$={abs(r.RA):.1f}', fontsize=9, ha='center', color='green', fontweight='bold', clip_on=False)
+        ra_val = abs(r.RA)
+        ra_str = f'{ra_val:.0f}' if ra_val == int(ra_val) else f'{ra_val:.1f}'
+        ax.text(-ra_arrow_len/2, max_h/2 + 0.12, f'$R_A$={ra_str}', fontsize=9, ha='center', color='green', fontweight='bold', clip_on=False)
 
         # F3 вправо - начинается на правой границе 3-го участка (x=L) и идёт ВПРАВО
         f3_arrow = FancyArrowPatch((L, 0), (L + arrow_len, 0),
@@ -594,18 +600,26 @@ class PlotCanvas(FigureCanvas):
         ax.plot([p.L, p.L], [0, r.N3], 'b-', linewidth=2)  # Вертикальная только на x=L
 
         # Подписи (абсолютные значения - минус не нужен, т.к. видно по положению)
-        # Для отрицательных - сдвигаем вправо чтобы не накладывались на ось
-        def label_x_offset(x_center, val, segment_width):
-            if val < 0:
-                return x_center + segment_width * 0.25  # Сдвиг вправо
-            return x_center
+        # Форматирование: убираем .0 для целых чисел
+        def fmt(val):
+            return f'{abs(val):.0f}' if abs(val) == int(abs(val)) else f'{abs(val):.1f}'
 
-        ax.text(label_x_offset(p.L1/2, r.N1, p.L1), r.N1, f'{abs(r.N1):.1f}', fontsize=9, color='blue',
-                ha='center', va='bottom' if r.N1 >= 0 else 'top')
-        ax.text(label_x_offset(p.L1 + p.L2/2, r.N2, p.L2), r.N2, f'{abs(r.N2):.1f}', fontsize=9, color='blue',
-                ha='center', va='bottom' if r.N2 >= 0 else 'top')
-        ax.text(label_x_offset(p.L1 + p.L2 + p.L3/2, r.N3, p.L3), r.N3, f'{abs(r.N3):.1f}', fontsize=9, color='blue',
-                ha='center', va='bottom' if r.N3 >= 0 else 'top')
+        # Для отрицательных - выносим к правому краю участка, чтобы не накладывались на ось
+        # Для положительных - по центру сверху
+        if r.N1 >= 0:
+            ax.text(p.L1/2, r.N1, fmt(r.N1), fontsize=9, color='blue', ha='center', va='bottom')
+        else:
+            ax.text(p.L1 - p.L*0.02, r.N1/2, fmt(r.N1), fontsize=9, color='blue', ha='right', va='center')
+
+        if r.N2 >= 0:
+            ax.text(p.L1 + p.L2/2, r.N2, fmt(r.N2), fontsize=9, color='blue', ha='center', va='bottom')
+        else:
+            ax.text(p.L1 + p.L2 - p.L*0.02, r.N2/2, fmt(r.N2), fontsize=9, color='blue', ha='right', va='center')
+
+        if r.N3 >= 0:
+            ax.text(p.L1 + p.L2 + p.L3/2, r.N3, fmt(r.N3), fontsize=9, color='blue', ha='center', va='bottom')
+        else:
+            ax.text(p.L - p.L*0.02, r.N3/2, fmt(r.N3), fontsize=9, color='blue', ha='right', va='center')
 
         # Знаки
         if abs(r.N1) > 0.5:
@@ -646,18 +660,26 @@ class PlotCanvas(FigureCanvas):
         ax.plot([p.L, p.L], [0, r.sigma3], 'g-', linewidth=2)  # Вертикальная только на x=L
 
         # Подписи (абсолютные значения - минус не нужен, т.к. видно по положению)
-        # Для отрицательных - сдвигаем вправо чтобы не накладывались на ось
-        def label_x_offset(x_center, val, segment_width):
-            if val < 0:
-                return x_center + segment_width * 0.25  # Сдвиг вправо
-            return x_center
+        # Форматирование: убираем .0 для целых чисел
+        def fmt(val):
+            return f'{abs(val):.0f}' if abs(val) == int(abs(val)) else f'{abs(val):.1f}'
 
-        ax.text(label_x_offset(p.L1/2, r.sigma1, p.L1), r.sigma1, f'{abs(r.sigma1):.1f}', fontsize=9, color='green',
-                ha='center', va='bottom' if r.sigma1 >= 0 else 'top')
-        ax.text(label_x_offset(p.L1 + p.L2/2, r.sigma2, p.L2), r.sigma2, f'{abs(r.sigma2):.1f}', fontsize=9, color='green',
-                ha='center', va='bottom' if r.sigma2 >= 0 else 'top')
-        ax.text(label_x_offset(p.L1 + p.L2 + p.L3/2, r.sigma3, p.L3), r.sigma3, f'{abs(r.sigma3):.1f}', fontsize=9, color='green',
-                ha='center', va='bottom' if r.sigma3 >= 0 else 'top')
+        # Для отрицательных - выносим к правому краю участка, чтобы не накладывались на ось
+        # Для положительных - по центру сверху
+        if r.sigma1 >= 0:
+            ax.text(p.L1/2, r.sigma1, fmt(r.sigma1), fontsize=9, color='green', ha='center', va='bottom')
+        else:
+            ax.text(p.L1 - p.L*0.02, r.sigma1/2, fmt(r.sigma1), fontsize=9, color='green', ha='right', va='center')
+
+        if r.sigma2 >= 0:
+            ax.text(p.L1 + p.L2/2, r.sigma2, fmt(r.sigma2), fontsize=9, color='green', ha='center', va='bottom')
+        else:
+            ax.text(p.L1 + p.L2 - p.L*0.02, r.sigma2/2, fmt(r.sigma2), fontsize=9, color='green', ha='right', va='center')
+
+        if r.sigma3 >= 0:
+            ax.text(p.L1 + p.L2 + p.L3/2, r.sigma3, fmt(r.sigma3), fontsize=9, color='green', ha='center', va='bottom')
+        else:
+            ax.text(p.L - p.L*0.02, r.sigma3/2, fmt(r.sigma3), fontsize=9, color='green', ha='right', va='center')
 
         # Знаки
         if abs(r.sigma1) > 0.5:
