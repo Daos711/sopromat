@@ -360,18 +360,17 @@ class PlotCanvas(FigureCanvas):
         # Размерная стрелка от 0 до x_max (положение максимума момента)
         r = solver.results
         x_max = r.x_max
-        # Позиция размерной линии внизу
-        dim_y = Q_min - y_margin * 0.6
+        # Позиция размерной линии внизу (но выше разметки оси)
+        dim_y = Q_min - y_margin * 0.3
         ax.annotate('', xy=(x_max, dim_y), xytext=(0, dim_y),
                     arrowprops=dict(arrowstyle='<->', color='red', lw=1.2))
-        # Подпись расстояния
+        # Подпись расстояния - над стрелкой
         x_max_str = f'{x_max:.2f}' if x_max != int(x_max) else f'{int(x_max)}'
-        ax.text(x_max/2, dim_y - y_margin * 0.15, f'$x_{{max}}$={x_max_str} м',
-                fontsize=9, ha='center', va='top', color='red')
+        ax.text(x_max/2, dim_y + y_margin * 0.1, f'$x_{{max}}$={x_max_str} м',
+                fontsize=9, ha='center', va='bottom', color='red')
 
-        # Увеличиваем нижний отступ для размерной линии
         ax.set_xlim(xlim)
-        ax.set_ylim(Q_min - y_margin * 1.1, Q_max + y_margin)
+        ax.set_ylim(Q_min - y_margin * 0.7, Q_max + y_margin)
 
         ax.set_ylabel('Q, кН', fontsize=10)
         ax.set_title('Эпюра Q(x)', fontsize=11, pad=3)
