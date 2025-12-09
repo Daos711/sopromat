@@ -6,11 +6,11 @@ a = Analysis(
     pathex=[],
     binaries=[],
     datas=[],
-    hiddenimports=['matplotlib.backends.backend_qt5agg'],
+    hiddenimports=[],
     hookspath=[],
     hooksconfig={},
     runtime_hooks=[],
-    excludes=[],
+    excludes=['tkinter', 'PIL', 'scipy', 'pandas', 'notebook', 'IPython', 'pytest', 'setuptools'],
     noarchive=False,
     optimize=0,
 )
