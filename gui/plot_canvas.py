@@ -582,12 +582,9 @@ class PlotCanvas(FigureCanvas):
         ax.fill_between(x_data, 0, N_data, alpha=0.3, color='blue', step='pre')
         ax.step(x_data, N_data, 'b-', linewidth=2, where='pre')
 
-        # Вертикальные линии
+        # Вертикальные линии только на краях (x=0 и x=L)
+        # На внутренних границах - только серый пунктир
         ax.plot([0, 0], [0, r.N1], 'b-', linewidth=2)
-        ax.plot([p.L1, p.L1], [0, r.N1], 'b-', linewidth=2)
-        ax.plot([p.L1, p.L1], [0, r.N2], 'b-', linewidth=2)
-        ax.plot([p.L1 + p.L2, p.L1 + p.L2], [0, r.N2], 'b-', linewidth=2)
-        ax.plot([p.L1 + p.L2, p.L1 + p.L2], [0, r.N3], 'b-', linewidth=2)
         ax.plot([p.L, p.L], [0, r.N3], 'b-', linewidth=2)
 
         # Подписи
@@ -625,12 +622,9 @@ class PlotCanvas(FigureCanvas):
         ax.fill_between(x_data, 0, sigma_data, alpha=0.3, color='green', step='pre')
         ax.step(x_data, sigma_data, 'g-', linewidth=2, where='pre')
 
-        # Вертикальные линии
+        # Вертикальные линии только на краях (x=0 и x=L)
+        # На внутренних границах - только серый пунктир
         ax.plot([0, 0], [0, r.sigma1], 'g-', linewidth=2)
-        ax.plot([p.L1, p.L1], [0, r.sigma1], 'g-', linewidth=2)
-        ax.plot([p.L1, p.L1], [0, r.sigma2], 'g-', linewidth=2)
-        ax.plot([p.L1 + p.L2, p.L1 + p.L2], [0, r.sigma2], 'g-', linewidth=2)
-        ax.plot([p.L1 + p.L2, p.L1 + p.L2], [0, r.sigma3], 'g-', linewidth=2)
         ax.plot([p.L, p.L], [0, r.sigma3], 'g-', linewidth=2)
 
         # Подписи
@@ -692,26 +686,52 @@ class PlotCanvas(FigureCanvas):
             ax.text(r.x0, -0.01, f'$x_0$={r.x0:.3f}', fontsize=7, color='black', ha='center', va='top')
 
         # ОДИН знак посередине всей эпюры (если вся в верхней или нижней полуплоскости)
+        # Знак ставится в центре по X и Y относительно реальной высоты эпюры
+
+        # Интерполируем значение эпюры в заданной точке x
+        def get_dl_at_x(x_target):
+            for i in range(len(x_data) - 1):
+                if x_data[i] <= x_target <= x_data[i + 1]:
+                    # Линейная интерполяция
+                    t = (x_target - x_data[i]) / (x_data[i + 1] - x_data[i]) if x_data[i + 1] != x_data[i] else 0
+                    return dl_data[i] + t * (dl_data[i + 1] - dl_data[i])
+            return dl_data[-1]
 
         if dl_min >= 0:  # Вся эпюра в верхней полуплоскости
-            ax.text(p.L / 2, dl_max / 2, '+', fontsize=14, ha='center', va='center',
+            # Центр по X = L/2, центр по Y = половина высоты эпюры в этой точке
+            x_center = p.L / 2
+            y_at_center = get_dl_at_x(x_center)
+            ax.text(x_center, y_at_center / 2, '+', fontsize=14, ha='center', va='center',
                     fontweight='bold', color='purple', alpha=0.7)
         elif dl_max <= 0:  # Вся эпюра в нижней полуплоскости
-            ax.text(p.L / 2, dl_min / 2, '−', fontsize=14, ha='center', va='center',
+            x_center = p.L / 2
+            y_at_center = get_dl_at_x(x_center)
+            ax.text(x_center, y_at_center / 2, '−', fontsize=14, ha='center', va='center',
                     fontweight='bold', color='purple', alpha=0.7)
         else:  # Эпюра пересекает ноль - знаки в разных областях
-            # Найдём где положительная и где отрицательная часть
             if r.x0 is not None:
                 # До x0 и после x0
                 if solver._dl1 > 0:
-                    ax.text(r.x0 / 2, dl_max / 2, '+', fontsize=14, ha='center', va='center',
+                    # Положительная часть от 0 до x0
+                    x_pos = r.x0 / 2
+                    y_pos = get_dl_at_x(x_pos) / 2
+                    ax.text(x_pos, y_pos, '+', fontsize=14, ha='center', va='center',
                             fontweight='bold', color='purple', alpha=0.7)
-                    ax.text((r.x0 + p.L) / 2, dl_min / 2, '−', fontsize=14, ha='center', va='center',
+                    # Отрицательная часть от x0 до L
+                    x_neg = (r.x0 + p.L) / 2
+                    y_neg = get_dl_at_x(x_neg) / 2
+                    ax.text(x_neg, y_neg, '−', fontsize=14, ha='center', va='center',
                             fontweight='bold', color='purple', alpha=0.7)
                 else:
-                    ax.text(r.x0 / 2, dl_min / 2, '−', fontsize=14, ha='center', va='center',
+                    # Отрицательная часть от 0 до x0
+                    x_neg = r.x0 / 2
+                    y_neg = get_dl_at_x(x_neg) / 2
+                    ax.text(x_neg, y_neg, '−', fontsize=14, ha='center', va='center',
                             fontweight='bold', color='purple', alpha=0.7)
-                    ax.text((r.x0 + p.L) / 2, dl_max / 2, '+', fontsize=14, ha='center', va='center',
+                    # Положительная часть от x0 до L
+                    x_pos = (r.x0 + p.L) / 2
+                    y_pos = get_dl_at_x(x_pos) / 2
+                    ax.text(x_pos, y_pos, '+', fontsize=14, ha='center', va='center',
                             fontweight='bold', color='purple', alpha=0.7)
 
         # Пунктиры рисуются как сквозные линии в plot_task3
