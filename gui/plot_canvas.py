@@ -604,22 +604,25 @@ class PlotCanvas(FigureCanvas):
         def fmt(val):
             return f'{abs(val):.0f}' if abs(val) == int(abs(val)) else f'{abs(val):.1f}'
 
-        # Для отрицательных - выносим к правому краю участка, чтобы не накладывались на ось
+        # Для отрицательных - выносим СПРАВА от границы участка (за пределы области)
         # Для положительных - по центру сверху
         if r.N1 >= 0:
             ax.text(p.L1/2, r.N1, fmt(r.N1), fontsize=9, color='blue', ha='center', va='bottom')
         else:
-            ax.text(p.L1 - p.L*0.02, r.N1/2, fmt(r.N1), fontsize=9, color='blue', ha='right', va='center')
+            # Справа от границы участка 1, на уровне значения
+            ax.text(p.L1 + p.L*0.02, r.N1, fmt(r.N1), fontsize=9, color='blue', ha='left', va='center')
 
         if r.N2 >= 0:
             ax.text(p.L1 + p.L2/2, r.N2, fmt(r.N2), fontsize=9, color='blue', ha='center', va='bottom')
         else:
-            ax.text(p.L1 + p.L2 - p.L*0.02, r.N2/2, fmt(r.N2), fontsize=9, color='blue', ha='right', va='center')
+            # Справа от границы участка 2, на уровне значения
+            ax.text(p.L1 + p.L2 + p.L*0.02, r.N2, fmt(r.N2), fontsize=9, color='blue', ha='left', va='center')
 
         if r.N3 >= 0:
             ax.text(p.L1 + p.L2 + p.L3/2, r.N3, fmt(r.N3), fontsize=9, color='blue', ha='center', va='bottom')
         else:
-            ax.text(p.L - p.L*0.02, r.N3/2, fmt(r.N3), fontsize=9, color='blue', ha='right', va='center')
+            # Слева от границы участка 3 (т.к. справа нет места), на уровне значения
+            ax.text(p.L1 + p.L2 - p.L*0.02, r.N3, fmt(r.N3), fontsize=9, color='blue', ha='right', va='center')
 
         # Знаки
         if abs(r.N1) > 0.5:
@@ -664,22 +667,25 @@ class PlotCanvas(FigureCanvas):
         def fmt(val):
             return f'{abs(val):.0f}' if abs(val) == int(abs(val)) else f'{abs(val):.1f}'
 
-        # Для отрицательных - выносим к правому краю участка, чтобы не накладывались на ось
+        # Для отрицательных - выносим СПРАВА от границы участка (за пределы области)
         # Для положительных - по центру сверху
         if r.sigma1 >= 0:
             ax.text(p.L1/2, r.sigma1, fmt(r.sigma1), fontsize=9, color='green', ha='center', va='bottom')
         else:
-            ax.text(p.L1 - p.L*0.02, r.sigma1/2, fmt(r.sigma1), fontsize=9, color='green', ha='right', va='center')
+            # Справа от границы участка 1, на уровне значения
+            ax.text(p.L1 + p.L*0.02, r.sigma1, fmt(r.sigma1), fontsize=9, color='green', ha='left', va='center')
 
         if r.sigma2 >= 0:
             ax.text(p.L1 + p.L2/2, r.sigma2, fmt(r.sigma2), fontsize=9, color='green', ha='center', va='bottom')
         else:
-            ax.text(p.L1 + p.L2 - p.L*0.02, r.sigma2/2, fmt(r.sigma2), fontsize=9, color='green', ha='right', va='center')
+            # Справа от границы участка 2, на уровне значения
+            ax.text(p.L1 + p.L2 + p.L*0.02, r.sigma2, fmt(r.sigma2), fontsize=9, color='green', ha='left', va='center')
 
         if r.sigma3 >= 0:
             ax.text(p.L1 + p.L2 + p.L3/2, r.sigma3, fmt(r.sigma3), fontsize=9, color='green', ha='center', va='bottom')
         else:
-            ax.text(p.L - p.L*0.02, r.sigma3/2, fmt(r.sigma3), fontsize=9, color='green', ha='right', va='center')
+            # Слева от границы участка 3 (т.к. справа нет места), на уровне значения
+            ax.text(p.L1 + p.L2 - p.L*0.02, r.sigma3, fmt(r.sigma3), fontsize=9, color='green', ha='right', va='center')
 
         # Знаки
         if abs(r.sigma1) > 0.5:
