@@ -402,7 +402,8 @@ class PlotCanvas(FigureCanvas):
         self._draw_delta_l_diagram(ax_dl, solver, xlim)
 
         # tight_layout с отступами для векторов RA (слева) и F3 (справа)
-        self.fig.tight_layout(rect=[0.08, 0, 0.94, 1])
+        # Увеличиваем отступы для надёжного отображения стрелок
+        self.fig.tight_layout(rect=[0.1, 0, 0.92, 1])
         self.draw()
 
     def _draw_rod_scheme(self, ax, p, r, xlim):
@@ -455,15 +456,20 @@ class PlotCanvas(FigureCanvas):
                     arrowprops=dict(arrowstyle='->', color='red', lw=2.5))
         ax.text(L1 + L2 - arrow_len/2, max_h/2 + 0.12, f'$F_2$={p.F2}', fontsize=9, ha='center', color='red')
 
-        # Реакция RA - начинается на заделке (x=0) и идёт ВЛЕВО (clip_on=False для видимости)
+        # Реакция RA - начинается на заделке (x=0) и идёт ВЛЕВО
+        # Используем FancyArrowPatch для надёжного отображения за пределами xlim
         ra_arrow_len = L * 0.08
-        ax.annotate('', xy=(-ra_arrow_len, 0), xytext=(0, 0),
-                    arrowprops=dict(arrowstyle='->', color='green', lw=3), clip_on=False)
+        ra_arrow = FancyArrowPatch((0, 0), (-ra_arrow_len, 0),
+                                   arrowstyle='->', mutation_scale=15,
+                                   color='green', linewidth=3, clip_on=False)
+        ax.add_patch(ra_arrow)
         ax.text(-ra_arrow_len/2, max_h/2 + 0.12, f'$R_A$={abs(r.RA):.1f}', fontsize=9, ha='center', color='green', fontweight='bold', clip_on=False)
 
-        # F3 вправо - начинается на правой границе 3-го участка (x=L) и идёт ВПРАВО (clip_on=False)
-        ax.annotate('', xy=(L + arrow_len, 0), xytext=(L, 0),
-                    arrowprops=dict(arrowstyle='->', color='blue', lw=2.5), clip_on=False)
+        # F3 вправо - начинается на правой границе 3-го участка (x=L) и идёт ВПРАВО
+        f3_arrow = FancyArrowPatch((L, 0), (L + arrow_len, 0),
+                                   arrowstyle='->', mutation_scale=15,
+                                   color='blue', linewidth=2.5, clip_on=False)
+        ax.add_patch(f3_arrow)
         ax.text(L + arrow_len/2, max_h/2 + 0.12, f'$F_3$={p.F3}', fontsize=9, ha='center', color='blue', clip_on=False)
 
         # Размер L
