@@ -92,11 +92,12 @@ class PlotCanvas(FigureCanvas):
             (L + triangle_w/2, -beam_height/2 - triangle_h)
         ], facecolor='lightgray', edgecolor='black', linewidth=1.5, clip_on=False)
         ax.add_patch(triangle_B)
-        # Один ролик по центру
+        # Два ролика
         roller_y = -beam_height/2 - triangle_h - 0.025
-        circle = plt.Circle((L, roller_y), L*0.012,
-                             facecolor='white', edgecolor='black', linewidth=1, clip_on=False)
-        ax.add_patch(circle)
+        for dx in [-L*0.012, L*0.012]:
+            circle = plt.Circle((L + dx, roller_y), L*0.01,
+                                 facecolor='white', edgecolor='black', linewidth=1, clip_on=False)
+            ax.add_patch(circle)
         ax.plot([L - triangle_w/2 - L*0.01, L + triangle_w/2 + L*0.01],
                 [roller_y - 0.025, roller_y - 0.025], 'k-', linewidth=1.5, clip_on=False)
         # Подпись B справа от опоры
@@ -359,21 +360,23 @@ class PlotCanvas(FigureCanvas):
         ax_sigma = self.fig.add_subplot(gs[2])
         ax_dl = self.fig.add_subplot(gs[3])
 
-        # Общие xlim для всех графиков
-        # Расширяем чтобы показать RA слева и F3 справа на схеме
+        # xlim для эпюр - стандартный от 0 до L
+        xlim = (0, p.L)
+
+        # xlim для схемы - расширенный чтобы показать RA и F3
         margin = p.L * 0.12
-        xlim = (-margin, p.L + margin)
+        xlim_scheme = (-margin, p.L + margin)
 
-        # --- Схема стержня ---
-        self._draw_rod_scheme(ax_scheme, p, r, xlim)
+        # --- Схема стержня (с расширенным xlim) ---
+        self._draw_rod_scheme(ax_scheme, p, r, xlim_scheme)
 
-        # --- Эпюра N(x) ---
+        # --- Эпюра N(x) (стандартный xlim) ---
         self._draw_N_diagram(ax_N, solver, xlim)
 
-        # --- Эпюра σ(x) ---
+        # --- Эпюра σ(x) (стандартный xlim) ---
         self._draw_sigma_diagram(ax_sigma, solver, xlim)
 
-        # --- Эпюра Δl(x) ---
+        # --- Эпюра Δl(x) (стандартный xlim) ---
         self._draw_delta_l_diagram(ax_dl, solver, xlim)
 
         self.fig.tight_layout()
@@ -430,7 +433,7 @@ class PlotCanvas(FigureCanvas):
         ax.text(L1 + L2 - arrow_len/2, max_h/2 + 0.12, f'$F_2$={p.F2}', fontsize=9, ha='center', color='red')
 
         # Реакция RA - начинается на заделке (x=0) и идёт ВЛЕВО
-        ra_arrow_len = L * 0.06
+        ra_arrow_len = L * 0.08
         ax.annotate('', xy=(-ra_arrow_len, 0), xytext=(0, 0),
                     arrowprops=dict(arrowstyle='->', color='green', lw=3))
         ax.text(-ra_arrow_len/2, max_h/2 + 0.12, f'$R_A$={abs(r.RA):.1f}', fontsize=9, ha='center', color='green', fontweight='bold')
