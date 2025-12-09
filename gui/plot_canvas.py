@@ -55,25 +55,26 @@ class PlotCanvas(FigureCanvas):
         self.fig.tight_layout()
 
         # Сквозные пунктирные линии через все графики
+        from matplotlib.lines import Line2D
         from matplotlib.patches import ConnectionPatch
         axes = [ax_scheme, ax_Q, ax_M]
 
-        # Функция для рисования сквозного пунктира
+        # Функция для рисования РОВНОГО сквозного пунктира
         def draw_through_line(x_pos):
-            # Линии внутри каждого графика
-            for ax in axes:
-                ax.axvline(x=x_pos, color='gray', linestyle='--', alpha=0.7, linewidth=1)
-            # Соединения между графиками
-            for i in range(len(axes) - 1):
-                ax_top, ax_bottom = axes[i], axes[i + 1]
-                y_top_min = ax_top.get_ylim()[0]
-                y_bottom_max = ax_bottom.get_ylim()[1]
-                con = ConnectionPatch(
-                    xyA=(x_pos, y_top_min), coordsA=ax_top.transData,
-                    xyB=(x_pos, y_bottom_max), coordsB=ax_bottom.transData,
-                    color='gray', linestyle='--', alpha=0.7, linewidth=1
-                )
-                self.fig.add_artist(con)
+            # Получаем x в координатах фигуры (одинаковый для всех осей)
+            # Используем первую ось для преобразования
+            x_fig = ax_Q.transData.transform((x_pos, 0))[0]
+            x_fig = self.fig.transFigure.inverted().transform((x_fig, 0))[0]
+
+            # Получаем y границы всех осей в координатах фигуры
+            y_top = ax_scheme.get_position().y1
+            y_bottom = ax_M.get_position().y0
+
+            # Рисуем одну ровную вертикальную линию через всю фигуру
+            line = Line2D([x_fig, x_fig], [y_bottom, y_top],
+                         transform=self.fig.transFigure,
+                         color='gray', linestyle='--', alpha=0.7, linewidth=1)
+            self.fig.add_artist(line)
 
         # Пунктир на x=0 (левая граница)
         draw_through_line(0)
@@ -454,25 +455,24 @@ class PlotCanvas(FigureCanvas):
         self.fig.tight_layout(rect=[0.1, 0, 0.92, 1])
 
         # Сквозные пунктирные линии через все графики
-        from matplotlib.patches import ConnectionPatch
+        from matplotlib.lines import Line2D
         axes = [ax_scheme, ax_N, ax_sigma, ax_dl]
 
-        # Функция для рисования сквозного пунктира
+        # Функция для рисования РОВНОГО сквозного пунктира
         def draw_through_line(x_pos):
-            # Линии внутри каждого графика
-            for ax in axes:
-                ax.axvline(x=x_pos, color='gray', linestyle='--', alpha=0.7, linewidth=1)
-            # Соединения между графиками
-            for i in range(len(axes) - 1):
-                ax_top, ax_bottom = axes[i], axes[i + 1]
-                y_top_min = ax_top.get_ylim()[0]
-                y_bottom_max = ax_bottom.get_ylim()[1]
-                con = ConnectionPatch(
-                    xyA=(x_pos, y_top_min), coordsA=ax_top.transData,
-                    xyB=(x_pos, y_bottom_max), coordsB=ax_bottom.transData,
-                    color='gray', linestyle='--', alpha=0.7, linewidth=1
-                )
-                self.fig.add_artist(con)
+            # Получаем x в координатах фигуры (одинаковый для всех осей)
+            x_fig = ax_N.transData.transform((x_pos, 0))[0]
+            x_fig = self.fig.transFigure.inverted().transform((x_fig, 0))[0]
+
+            # Получаем y границы всех осей в координатах фигуры
+            y_top = ax_scheme.get_position().y1
+            y_bottom = ax_dl.get_position().y0
+
+            # Рисуем одну ровную вертикальную линию через всю фигуру
+            line = Line2D([x_fig, x_fig], [y_bottom, y_top],
+                         transform=self.fig.transFigure,
+                         color='gray', linestyle='--', alpha=0.7, linewidth=1)
+            self.fig.add_artist(line)
 
         # Пунктир на x=0 (левая граница)
         draw_through_line(0)
