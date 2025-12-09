@@ -576,23 +576,29 @@ class PlotCanvas(FigureCanvas):
         p = solver.params
         r = solver.results
 
-        x_data, N_data = solver.get_N_data()
-
         ax.axhline(y=0, color='black', linewidth=1.5)
-        ax.fill_between(x_data, 0, N_data, alpha=0.3, color='blue', step='pre')
-        ax.step(x_data, N_data, 'b-', linewidth=2, where='pre')
 
-        # Вертикальные линии только на краях (x=0 и x=L)
-        # На внутренних границах - только серый пунктир
-        ax.plot([0, 0], [0, r.N1], 'b-', linewidth=2)
-        ax.plot([p.L, p.L], [0, r.N3], 'b-', linewidth=2)
+        # Рисуем каждый участок ОТДЕЛЬНО (без вертикальных линий на внутренних границах)
+        # Участок 1: от 0 до L1
+        ax.fill_between([0, p.L1], [r.N1, r.N1], 0, alpha=0.3, color='blue')
+        ax.plot([0, p.L1], [r.N1, r.N1], 'b-', linewidth=2)  # Горизонтальная линия
+        ax.plot([0, 0], [0, r.N1], 'b-', linewidth=2)  # Вертикальная только на x=0
 
-        # Подписи
-        ax.text(p.L1/2, r.N1, f'{r.N1:.1f}', fontsize=9, color='blue', ha='center',
+        # Участок 2: от L1 до L1+L2
+        ax.fill_between([p.L1, p.L1 + p.L2], [r.N2, r.N2], 0, alpha=0.3, color='blue')
+        ax.plot([p.L1, p.L1 + p.L2], [r.N2, r.N2], 'b-', linewidth=2)
+
+        # Участок 3: от L1+L2 до L
+        ax.fill_between([p.L1 + p.L2, p.L], [r.N3, r.N3], 0, alpha=0.3, color='blue')
+        ax.plot([p.L1 + p.L2, p.L], [r.N3, r.N3], 'b-', linewidth=2)
+        ax.plot([p.L, p.L], [0, r.N3], 'b-', linewidth=2)  # Вертикальная только на x=L
+
+        # Подписи (абсолютные значения - минус не нужен, т.к. видно по положению)
+        ax.text(p.L1/2, r.N1, f'{abs(r.N1):.1f}', fontsize=9, color='blue', ha='center',
                 va='bottom' if r.N1 >= 0 else 'top')
-        ax.text(p.L1 + p.L2/2, r.N2, f'{r.N2:.1f}', fontsize=9, color='blue', ha='center',
+        ax.text(p.L1 + p.L2/2, r.N2, f'{abs(r.N2):.1f}', fontsize=9, color='blue', ha='center',
                 va='bottom' if r.N2 >= 0 else 'top')
-        ax.text(p.L1 + p.L2 + p.L3/2, r.N3, f'{r.N3:.1f}', fontsize=9, color='blue', ha='center',
+        ax.text(p.L1 + p.L2 + p.L3/2, r.N3, f'{abs(r.N3):.1f}', fontsize=9, color='blue', ha='center',
                 va='bottom' if r.N3 >= 0 else 'top')
 
         # Знаки
@@ -616,23 +622,29 @@ class PlotCanvas(FigureCanvas):
         p = solver.params
         r = solver.results
 
-        x_data, sigma_data = solver.get_sigma_data()
-
         ax.axhline(y=0, color='black', linewidth=1.5)
-        ax.fill_between(x_data, 0, sigma_data, alpha=0.3, color='green', step='pre')
-        ax.step(x_data, sigma_data, 'g-', linewidth=2, where='pre')
 
-        # Вертикальные линии только на краях (x=0 и x=L)
-        # На внутренних границах - только серый пунктир
-        ax.plot([0, 0], [0, r.sigma1], 'g-', linewidth=2)
-        ax.plot([p.L, p.L], [0, r.sigma3], 'g-', linewidth=2)
+        # Рисуем каждый участок ОТДЕЛЬНО (без вертикальных линий на внутренних границах)
+        # Участок 1: от 0 до L1
+        ax.fill_between([0, p.L1], [r.sigma1, r.sigma1], 0, alpha=0.3, color='green')
+        ax.plot([0, p.L1], [r.sigma1, r.sigma1], 'g-', linewidth=2)
+        ax.plot([0, 0], [0, r.sigma1], 'g-', linewidth=2)  # Вертикальная только на x=0
 
-        # Подписи
-        ax.text(p.L1/2, r.sigma1, f'{r.sigma1:.1f}', fontsize=9, color='green', ha='center',
+        # Участок 2: от L1 до L1+L2
+        ax.fill_between([p.L1, p.L1 + p.L2], [r.sigma2, r.sigma2], 0, alpha=0.3, color='green')
+        ax.plot([p.L1, p.L1 + p.L2], [r.sigma2, r.sigma2], 'g-', linewidth=2)
+
+        # Участок 3: от L1+L2 до L
+        ax.fill_between([p.L1 + p.L2, p.L], [r.sigma3, r.sigma3], 0, alpha=0.3, color='green')
+        ax.plot([p.L1 + p.L2, p.L], [r.sigma3, r.sigma3], 'g-', linewidth=2)
+        ax.plot([p.L, p.L], [0, r.sigma3], 'g-', linewidth=2)  # Вертикальная только на x=L
+
+        # Подписи (абсолютные значения - минус не нужен, т.к. видно по положению)
+        ax.text(p.L1/2, r.sigma1, f'{abs(r.sigma1):.1f}', fontsize=9, color='green', ha='center',
                 va='bottom' if r.sigma1 >= 0 else 'top')
-        ax.text(p.L1 + p.L2/2, r.sigma2, f'{r.sigma2:.1f}', fontsize=9, color='green', ha='center',
+        ax.text(p.L1 + p.L2/2, r.sigma2, f'{abs(r.sigma2):.1f}', fontsize=9, color='green', ha='center',
                 va='bottom' if r.sigma2 >= 0 else 'top')
-        ax.text(p.L1 + p.L2 + p.L3/2, r.sigma3, f'{r.sigma3:.1f}', fontsize=9, color='green', ha='center',
+        ax.text(p.L1 + p.L2 + p.L3/2, r.sigma3, f'{abs(r.sigma3):.1f}', fontsize=9, color='green', ha='center',
                 va='bottom' if r.sigma3 >= 0 else 'top')
 
         # Знаки
