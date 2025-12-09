@@ -242,6 +242,9 @@ class PlotCanvas(FigureCanvas):
         if Q_at_a_right * Q_at_L < 0:  # Q меняет знак - есть пересечение с нулём
             x_zero = p.a + (0 - Q_at_a_right) * (p.L - p.a) / (Q_at_L - Q_at_a_right)
 
+            # Пунктир в точке пересечения с нулём (единый с эпюрой M)
+            ax.axvline(x=x_zero, color='gray', linestyle='--', alpha=0.7, linewidth=1)
+
             if Q_at_a_right > 0:
                 pos_width = x_zero - p.a
                 neg_width = p.L - x_zero
@@ -341,6 +344,15 @@ class PlotCanvas(FigureCanvas):
         # Пунктир границы участков
         ax.axvline(x=p.a, color='gray', linestyle='--', alpha=0.7, linewidth=1)
 
+        # Пунктир от точки пересечения Q с нулём (если максимум M на 2 участке, не на границе)
+        Q_at_a_right = solver.Q(p.a + 1e-9)
+        Q_at_L = solver.Q(p.L)
+        # Проверяем: Q меняет знак на 2 участке И максимум M строго внутри 2 участка
+        if Q_at_a_right * Q_at_L < 0 and p.a < r.x_max < p.L - 0.01:
+            # Находим точку пересечения Q с нулём
+            x_zero = p.a + (0 - Q_at_a_right) * (p.L - p.a) / (Q_at_L - Q_at_a_right)
+            ax.axvline(x=x_zero, color='gray', linestyle='--', alpha=0.7, linewidth=1)
+
         M_min = min(M_data)
         y_margin = max(abs(M_max), abs(M_min)) * 0.2 if M_max != 0 else 5
         ax.set_xlim(xlim)
@@ -382,7 +394,8 @@ class PlotCanvas(FigureCanvas):
         # --- Эпюра Δl(x) (стандартный xlim) ---
         self._draw_delta_l_diagram(ax_dl, solver, xlim)
 
-        self.fig.tight_layout()
+        # Добавляем отступы слева и справа для векторов RA и F3
+        self.fig.subplots_adjust(left=0.12, right=0.92)
         self.draw()
 
     def _draw_rod_scheme(self, ax, p, r, xlim):
