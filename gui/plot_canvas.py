@@ -92,16 +92,23 @@ class PlotCanvas(FigureCanvas):
             (L + triangle_w/2, -beam_height/2 - triangle_h)
         ], facecolor='lightgray', edgecolor='black', linewidth=1.5, clip_on=False)
         ax.add_patch(triangle_B)
-        # Два ролика
-        roller_y = -beam_height/2 - triangle_h - 0.025
-        for dx in [-L*0.012, L*0.012]:
-            circle = plt.Circle((L + dx, roller_y), L*0.01,
+        # Два ролика - маленькие, между треугольником и штриховкой
+        roller_r = L * 0.008  # Радиус ролика
+        roller_y = -beam_height/2 - triangle_h - roller_r - 0.005  # Чуть ниже треугольника
+        for dx in [-L*0.018, L*0.018]:
+            circle = plt.Circle((L + dx, roller_y), roller_r,
                                  facecolor='white', edgecolor='black', linewidth=1, clip_on=False)
             ax.add_patch(circle)
+        # Линия под роликами
+        ground_y_B = roller_y - roller_r - 0.01
         ax.plot([L - triangle_w/2 - L*0.01, L + triangle_w/2 + L*0.01],
-                [roller_y - 0.025, roller_y - 0.025], 'k-', linewidth=1.5, clip_on=False)
+                [ground_y_B, ground_y_B], 'k-', linewidth=1.5, clip_on=False)
+        # Штриховка под роликами
+        for i in range(5):
+            x_start = L - triangle_w/2 + i * triangle_w / 4
+            ax.plot([x_start, x_start - L*0.015], [ground_y_B, ground_y_B - 0.04], 'k-', linewidth=1, clip_on=False)
         # Подпись B справа от опоры
-        ax.text(L + triangle_w/2 + L*0.02, ground_y - 0.04, 'B', fontsize=10, ha='left', fontweight='bold', clip_on=False)
+        ax.text(L + triangle_w/2 + L*0.02, ground_y_B - 0.02, 'B', fontsize=10, ha='left', fontweight='bold', clip_on=False)
 
         # Распределённая нагрузка q
         q_y_top = beam_height/2 + 0.18
@@ -360,15 +367,11 @@ class PlotCanvas(FigureCanvas):
         ax_sigma = self.fig.add_subplot(gs[2])
         ax_dl = self.fig.add_subplot(gs[3])
 
-        # xlim для эпюр - стандартный от 0 до L
+        # Единый xlim для всех графиков - ПУНКТИРНОЕ ЕДИНСТВО
         xlim = (0, p.L)
 
-        # xlim для схемы - расширенный чтобы показать RA и F3
-        margin = p.L * 0.12
-        xlim_scheme = (-margin, p.L + margin)
-
-        # --- Схема стержня (с расширенным xlim) ---
-        self._draw_rod_scheme(ax_scheme, p, r, xlim_scheme)
+        # --- Схема стержня (с тем же xlim, векторы RA и F3 с clip_on=False) ---
+        self._draw_rod_scheme(ax_scheme, p, r, xlim)
 
         # --- Эпюра N(x) (стандартный xlim) ---
         self._draw_N_diagram(ax_N, solver, xlim)
@@ -408,16 +411,16 @@ class PlotCanvas(FigureCanvas):
         ax.text(L1 + L2/2, h2/2 + 0.05, f'$A_2$={p.A2}', fontsize=8, ha='center', va='bottom')
         ax.text(L1 + L2 + L3/2, h3/2 + 0.05, f'$A_3$={p.A3}', fontsize=8, ha='center', va='bottom')
 
-        # Заделка - вертикальная линия на x=0 со штриховкой (без прямоугольника)
+        # Заделка - вертикальная линия на x=0 со штриховкой (clip_on=False для видимости)
         wall_height = max_h + 0.15
         # Вертикальная линия заделки на x=0
-        ax.plot([0, 0], [-wall_height/2, wall_height/2], 'k-', linewidth=3)
+        ax.plot([0, 0], [-wall_height/2, wall_height/2], 'k-', linewidth=3, clip_on=False)
         # Штриховка заделки - от линии влево
         hatch_len = L * 0.03
         for i in range(10):
             y_pos = -wall_height/2 + i * wall_height / 9
-            ax.plot([0, -hatch_len], [y_pos, y_pos - 0.03], 'k-', linewidth=1.5)
-        ax.text(0, -wall_height/2 - 0.08, 'A', fontsize=10, ha='center', fontweight='bold')
+            ax.plot([0, -hatch_len], [y_pos, y_pos - 0.03], 'k-', linewidth=1.5, clip_on=False)
+        ax.text(-hatch_len/2, -wall_height/2 - 0.08, 'A', fontsize=10, ha='center', fontweight='bold', clip_on=False)
 
         # Силы - начинаются РОВНО на границах участков
         arrow_len = L * 0.08
@@ -432,16 +435,16 @@ class PlotCanvas(FigureCanvas):
                     arrowprops=dict(arrowstyle='->', color='red', lw=2.5))
         ax.text(L1 + L2 - arrow_len/2, max_h/2 + 0.12, f'$F_2$={p.F2}', fontsize=9, ha='center', color='red')
 
-        # Реакция RA - начинается на заделке (x=0) и идёт ВЛЕВО
+        # Реакция RA - начинается на заделке (x=0) и идёт ВЛЕВО (clip_on=False для видимости)
         ra_arrow_len = L * 0.08
         ax.annotate('', xy=(-ra_arrow_len, 0), xytext=(0, 0),
-                    arrowprops=dict(arrowstyle='->', color='green', lw=3))
-        ax.text(-ra_arrow_len/2, max_h/2 + 0.12, f'$R_A$={abs(r.RA):.1f}', fontsize=9, ha='center', color='green', fontweight='bold')
+                    arrowprops=dict(arrowstyle='->', color='green', lw=3), clip_on=False)
+        ax.text(-ra_arrow_len/2, max_h/2 + 0.12, f'$R_A$={abs(r.RA):.1f}', fontsize=9, ha='center', color='green', fontweight='bold', clip_on=False)
 
-        # F3 вправо - начинается на правой границе 3-го участка (x=L) и идёт ВПРАВО
+        # F3 вправо - начинается на правой границе 3-го участка (x=L) и идёт ВПРАВО (clip_on=False)
         ax.annotate('', xy=(L + arrow_len, 0), xytext=(L, 0),
-                    arrowprops=dict(arrowstyle='->', color='blue', lw=2.5))
-        ax.text(L + arrow_len/2, max_h/2 + 0.12, f'$F_3$={p.F3}', fontsize=9, ha='center', color='blue')
+                    arrowprops=dict(arrowstyle='->', color='blue', lw=2.5), clip_on=False)
+        ax.text(L + arrow_len/2, max_h/2 + 0.12, f'$F_3$={p.F3}', fontsize=9, ha='center', color='blue', clip_on=False)
 
         # Размер L
         y_dim = -max_h/2 - 0.15
