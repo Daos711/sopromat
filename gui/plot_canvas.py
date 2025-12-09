@@ -65,10 +65,7 @@ class PlotCanvas(FigureCanvas):
         ax.add_patch(Rectangle((0, -beam_height/2), L, beam_height,
                                 facecolor='lightblue', edgecolor='black', linewidth=2))
 
-        # Ось x - справа от балки
-        ax.annotate('', xy=(L * 1.08, 0), xytext=(L, 0),
-                    arrowprops=dict(arrowstyle='->', color='black', lw=1.5))
-        ax.text(L * 1.09, 0, 'x', fontsize=10, va='center')
+        # Ось x убрана по просьбе пользователя
 
         # Опора A (шарнирно-неподвижная) - clip_on=False чтобы не обрезалось
         triangle_h = 0.12
@@ -85,7 +82,8 @@ class PlotCanvas(FigureCanvas):
         for i in range(5):
             x_start = -triangle_w/2 + i * triangle_w / 4
             ax.plot([x_start, x_start - L*0.015], [ground_y, ground_y - 0.04], 'k-', linewidth=1, clip_on=False)
-        ax.text(0, ground_y - 0.08, 'A', fontsize=10, ha='center', fontweight='bold', clip_on=False)
+        # Подпись A слева от опоры
+        ax.text(-triangle_w/2 - L*0.02, ground_y - 0.04, 'A', fontsize=10, ha='right', fontweight='bold', clip_on=False)
 
         # Опора B (шарнирно-подвижная) - clip_on=False чтобы не обрезалось
         triangle_B = Polygon([
@@ -94,15 +92,15 @@ class PlotCanvas(FigureCanvas):
             (L + triangle_w/2, -beam_height/2 - triangle_h)
         ], facecolor='lightgray', edgecolor='black', linewidth=1.5, clip_on=False)
         ax.add_patch(triangle_B)
-        # Ролики
+        # Один ролик по центру
         roller_y = -beam_height/2 - triangle_h - 0.025
-        for dx in [-L*0.015, 0, L*0.015]:
-            circle = plt.Circle((L + dx, roller_y), L*0.008,
-                                 facecolor='white', edgecolor='black', linewidth=1, clip_on=False)
-            ax.add_patch(circle)
+        circle = plt.Circle((L, roller_y), L*0.012,
+                             facecolor='white', edgecolor='black', linewidth=1, clip_on=False)
+        ax.add_patch(circle)
         ax.plot([L - triangle_w/2 - L*0.01, L + triangle_w/2 + L*0.01],
-                [roller_y - 0.02, roller_y - 0.02], 'k-', linewidth=1.5, clip_on=False)
-        ax.text(L, roller_y - 0.07, 'B', fontsize=10, ha='center', fontweight='bold', clip_on=False)
+                [roller_y - 0.025, roller_y - 0.025], 'k-', linewidth=1.5, clip_on=False)
+        # Подпись B справа от опоры
+        ax.text(L + triangle_w/2 + L*0.02, ground_y - 0.04, 'B', fontsize=10, ha='left', fontweight='bold', clip_on=False)
 
         # Распределённая нагрузка q
         q_y_top = beam_height/2 + 0.18
@@ -218,15 +216,13 @@ class PlotCanvas(FigureCanvas):
                 ax.plot([x, x], [0, Q], 'b-', alpha=0.3, linewidth=0.5)
 
         # Знаки в ЦЕНТРЕ каждой области
-        # Минимальная ширина области для показа знака (в долях от L)
-        min_width_for_sign = p.L * 0.08
+        # Минимальная ширина области для показа знака (достаточно большая чтобы знак поместился)
+        min_width_for_sign = p.L * 0.15
 
         # Область 1: от 0 до a (трапеция)
-        # Центр трапеции по x - середина участка
         center_x1 = p.a / 2
-        # Центр по y - среднее значение
         center_y1 = (Q_at_0 + Q_at_a_left) / 2 * 0.5
-        if p.a > min_width_for_sign:  # Область достаточно широкая
+        if p.a > min_width_for_sign:
             if Q_at_0 > 0 and Q_at_a_left > 0:
                 ax.text(center_x1, center_y1, '+', fontsize=16, ha='center', va='center',
                         fontweight='bold', color='blue', alpha=0.8)
@@ -235,12 +231,9 @@ class PlotCanvas(FigureCanvas):
                         fontweight='bold', color='blue', alpha=0.8)
 
         # Область 2: от a до L
-        # Проверяем, пересекает ли Q(x) ноль на этом участке
         if Q_at_a_right * Q_at_L < 0:  # Q меняет знак - есть пересечение с нулём
-            # Находим точку пересечения с нулём (линейная интерполяция)
             x_zero = p.a + (0 - Q_at_a_right) * (p.L - p.a) / (Q_at_L - Q_at_a_right)
 
-            # Положительная часть
             if Q_at_a_right > 0:
                 pos_width = x_zero - p.a
                 neg_width = p.L - x_zero
@@ -250,26 +243,18 @@ class PlotCanvas(FigureCanvas):
 
             # Знак + в положительной части (только если область достаточно большая)
             if Q_at_a_right > 0 and pos_width > min_width_for_sign:
-                center_x_pos = (p.a + x_zero) / 2
-                center_y_pos = Q_at_a_right / 2 * 0.5
+                # Центроид треугольника: x = (a + a + x_zero)/3 = (2a + x_zero)/3
+                center_x_pos = (2 * p.a + x_zero) / 3
+                center_y_pos = Q_at_a_right / 3
                 ax.text(center_x_pos, center_y_pos, '+', fontsize=16, ha='center', va='center',
-                        fontweight='bold', color='blue', alpha=0.8)
-            elif Q_at_a_right < 0 and neg_width > min_width_for_sign:
-                center_x_neg = (p.a + x_zero) / 2
-                center_y_neg = Q_at_a_right / 2 * 0.5
-                ax.text(center_x_neg, center_y_neg, '−', fontsize=16, ha='center', va='center',
                         fontweight='bold', color='blue', alpha=0.8)
 
             # Знак − в отрицательной части (только если область достаточно большая)
             if Q_at_L < 0 and neg_width > min_width_for_sign:
-                center_x_neg = (x_zero + p.L) / 2
-                center_y_neg = Q_at_L / 2 * 0.5
+                # Центроид треугольника: x = (x_zero + L + L)/3 = (x_zero + 2L)/3
+                center_x_neg = (x_zero + 2 * p.L) / 3
+                center_y_neg = Q_at_L / 3
                 ax.text(center_x_neg, center_y_neg, '−', fontsize=16, ha='center', va='center',
-                        fontweight='bold', color='blue', alpha=0.8)
-            elif Q_at_L > 0 and pos_width > min_width_for_sign:
-                center_x_pos = (x_zero + p.L) / 2
-                center_y_pos = Q_at_L / 2 * 0.5
-                ax.text(center_x_pos, center_y_pos, '+', fontsize=16, ha='center', va='center',
                         fontweight='bold', color='blue', alpha=0.8)
         else:
             # Q не меняет знак - один знак для всей области
@@ -374,8 +359,10 @@ class PlotCanvas(FigureCanvas):
         ax_sigma = self.fig.add_subplot(gs[2])
         ax_dl = self.fig.add_subplot(gs[3])
 
-        # Общие xlim для всех графиков - РОВНО от 0 до L, без отступов
-        xlim = (0, p.L)
+        # Общие xlim для всех графиков
+        # Расширяем чтобы показать RA слева и F3 справа на схеме
+        margin = p.L * 0.12
+        xlim = (-margin, p.L + margin)
 
         # --- Схема стержня ---
         self._draw_rod_scheme(ax_scheme, p, r, xlim)
@@ -442,18 +429,16 @@ class PlotCanvas(FigureCanvas):
                     arrowprops=dict(arrowstyle='->', color='red', lw=2.5))
         ax.text(L1 + L2 - arrow_len/2, max_h/2 + 0.12, f'$F_2$={p.F2}', fontsize=9, ha='center', color='red')
 
-        # F3 вправо - НАЧИНАЕТСЯ на правой границе 3-го участка (x=L) и идёт ВПРАВО
-        ax.annotate('', xy=(L + arrow_len, 0), xytext=(L, 0),
-                    arrowprops=dict(arrowstyle='->', color='blue', lw=2.5), clip_on=False)
-        ax.text(L + arrow_len + L*0.02, 0, f'$F_3$={p.F3}', fontsize=9, ha='left', va='center', color='blue')
-
-        # Реакция RA - ОТ ЦЕНТРА ЗАДЕЛКИ ВЛЕВО (показываем модуль)
-        ra_arrow_len = L * 0.1
-        # Стрелка начинается на заделке (x=0) и идёт ВЛЕВО
+        # Реакция RA - начинается на заделке (x=0) и идёт ВЛЕВО
+        ra_arrow_len = L * 0.06
         ax.annotate('', xy=(-ra_arrow_len, 0), xytext=(0, 0),
-                    arrowprops=dict(arrowstyle='->', color='green', lw=3), clip_on=False)
-        # Подпись рядом с концом вектора, показываем МОДУЛЬ (положительное значение)
-        ax.text(-ra_arrow_len - L*0.02, 0, f'$R_A$={abs(r.RA):.1f}', fontsize=10, ha='right', va='center', color='green', fontweight='bold')
+                    arrowprops=dict(arrowstyle='->', color='green', lw=3))
+        ax.text(-ra_arrow_len/2, max_h/2 + 0.12, f'$R_A$={abs(r.RA):.1f}', fontsize=9, ha='center', color='green', fontweight='bold')
+
+        # F3 вправо - начинается на правой границе 3-го участка (x=L) и идёт ВПРАВО
+        ax.annotate('', xy=(L + arrow_len, 0), xytext=(L, 0),
+                    arrowprops=dict(arrowstyle='->', color='blue', lw=2.5))
+        ax.text(L + arrow_len/2, max_h/2 + 0.12, f'$F_3$={p.F3}', fontsize=9, ha='center', color='blue')
 
         # Размер L
         y_dim = -max_h/2 - 0.15
@@ -471,10 +456,9 @@ class PlotCanvas(FigureCanvas):
         ax.axvline(x=L1, color='gray', linestyle='--', alpha=0.7, linewidth=1)
         ax.axvline(x=L1 + L2, color='gray', linestyle='--', alpha=0.7, linewidth=1)
 
-        # xlim ТАКОЙ ЖЕ как у эпюр для единых пунктирных линий
+        # xlim передается из plot_task3, расширенный для показа RA и F3
         ax.set_xlim(xlim)
         ax.set_ylim(-max_h/2 - 0.35, max_h/2 + 0.5)
-        # НЕ используем set_aspect - схема растягивается по ширине как эпюры
         ax.axis('off')
         ax.set_title(f'Задача 3. Вариант {p.N}', fontsize=12, fontweight='bold', pad=15)
 
