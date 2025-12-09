@@ -243,9 +243,9 @@ class PlotCanvas(FigureCanvas):
         Q_at_a_right = solver.Q(p.a + 1e-9)
         Q_at_L = solver.Q(p.L)
 
-        # Вычисляем отступ для подписей (выносим за пределы эпюры)
+        # Вычисляем отступ для подписей (выносим за пределы эпюры, но не далеко)
         Q_range = max(max(Q1), max(Q2)) - min(min(Q1), min(Q2))
-        label_offset = max(Q_range * 0.15, 3.0)  # Минимум 3 кН отступ
+        label_offset = max(Q_range * 0.08, 1.5)  # Небольшой отступ
 
         # Функция для определения позиции подписи (выносим за эпюру)
         def get_label_y(Q_val, offset):
